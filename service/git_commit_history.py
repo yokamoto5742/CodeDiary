@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import subprocess
@@ -37,7 +38,7 @@ class GitCommitHistoryService:
                            author: str = None,
                            max_count: int = None,
                            branch: str = None) -> List[Dict]:
-        cmd = ['git', 'log', '--pretty=format:%H|%an|%ae|%ad|%s', '--date=short']
+        cmd = ['git', 'log', '--pretty=format:%H|%an|%ae|%aI|%s', '--date=iso']
 
         if since_date:
             cmd.append(f'--since={since_date}')
@@ -65,7 +66,7 @@ class GitCommitHistoryService:
                             'hash': parts[0],
                             'author_name': parts[1],
                             'author_email': parts[2],
-                            'date': parts[3],
+                            'timestamp': parts[3],
                             'message': '|'.join(parts[4:])
                         })
 
@@ -80,6 +81,18 @@ class GitCommitHistoryService:
         if not commits:
             return "コミット履歴が見つかりませんでした。"
 
+        if output_format == 'json':
+            simplified_commits = []
+            for commit in commits:
+                simplified_commits.append({
+                    'timestamp': commit['timestamp'],
+                    'message': commit['message']
+                })
+            return json.dumps(simplified_commits, ensure_ascii=False, indent=2)
+
+        elif output_format == 'llm_json':
+            return json.dumps(commits, ensure_ascii=False, indent=2)
+
         output = []
         output.append("=" * 100)
         output.append(f"コミット履歴 ({len(commits)}件)")
@@ -92,22 +105,30 @@ class GitCommitHistoryService:
 
         return '\n'.join(output)
 
-    def save_to_file(self, content: str, filename: str = None) -> str:
+    def save_to_file(self, content: str, filename: str = None, output_format: str = 'table') -> str:
         if not filename:
             try:
                 filename_format = self.config.get('OUTPUT', 'filename_format', fallback='commit_history_datetime.txt')
 
                 if filename_format == 'commit_history_datetime.txt':
-                    filename = datetime.now().strftime('commit_history_%Y%m%d_%H%M%S.txt')
+                    if output_format in ['json', 'llm_json']:
+                        filename = datetime.now().strftime('commit_history_%Y%m%d_%H%M%S.json')
+                    else:
+                        filename = datetime.now().strftime('commit_history_%Y%m%d_%H%M%S.txt')
                 elif '%' in filename_format:
                     if '%%' in filename_format:
                         filename_format = filename_format.replace('%%', '%')
                     filename = datetime.now().strftime(filename_format)
+                    if output_format in ['json', 'llm_json'] and filename.endswith('.txt'):
+                        filename = filename.replace('.txt', '.json')
                 else:
                     filename = filename_format
 
             except Exception:
-                filename = datetime.now().strftime('commit_history_%Y%m%d_%H%M%S.txt')
+                if output_format in ['json', 'llm_json']:
+                    filename = datetime.now().strftime('commit_history_%Y%m%d_%H%M%S.json')
+                else:
+                    filename = datetime.now().strftime('commit_history_%Y%m%d_%H%M%S.txt')
 
         output_dir = self.config.get('OUTPUT', 'output_directory', fallback='logs')
         output_path = Path(self.repository_path) / output_dir
@@ -141,7 +162,7 @@ class GitCommitHistoryService:
             remote_url = remote_result.stdout.strip() if remote_result.returncode == 0 else "未設定"
 
             latest_commit_result = subprocess.run(
-                ['git', 'log', '-1', '--pretty=format:%H|%an|%ad', '--date=short'],
+                ['git', 'log', '-1', '--pretty=format:%H|%an|%aI'],
                 cwd=self.repository_path,
                 capture_output=True,
                 text=True
@@ -197,14 +218,13 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
-    # 引数の定義を追加
     parser.add_argument('--since', type=str, help='開始日 (YYYY-MM-DD形式)')
     parser.add_argument('--until', type=str, help='終了日 (YYYY-MM-DD形式)')
     parser.add_argument('--days', type=int, help='過去何日分を取得するか')
     parser.add_argument('--author', type=str, help='作成者でフィルタ')
     parser.add_argument('--max-count', type=int, help='最大取得件数')
     parser.add_argument('--branch', type=str, help='対象ブランチ')
-    parser.add_argument('--format', type=str, choices=['table', 'json', 'csv'], help='出力形式')
+    parser.add_argument('--format', type=str, choices=['table', 'json', 'llm_json', 'csv'], help='出力形式')
     parser.add_argument('--no-save', action='store_true', help='ファイル保存を無効にする')
     parser.add_argument('--output', type=str, help='出力ファイル名')
 
@@ -213,7 +233,6 @@ def main():
     try:
         service = GitCommitHistoryService()
 
-        # config.iniからデフォルト値を取得
         since_date = args.since or service.config.get('GIT', 'default_since_date', fallback=None)
         until_date = args.until or service.config.get('GIT', 'default_until_date', fallback=None)
 
@@ -222,13 +241,11 @@ def main():
             until_date = datetime.now().strftime('%Y-%m-%d')
 
         if not since_date and not until_date and not args.days:
-            # デフォルトの日数をconfig.iniから取得
             default_days = service.config.getint('GIT', 'default_days', fallback=30)
             since_date = (datetime.now() - timedelta(days=default_days)).strftime('%Y-%m-%d')
             until_date = datetime.now().strftime('%Y-%m-%d')
             print(f"期間が指定されていないため、過去{default_days}日間のコミット履歴を取得します")
 
-        print("コミット履歴を取得中...")
         commits = service.get_commit_history(
             since_date=since_date,
             until_date=until_date,
@@ -245,7 +262,7 @@ def main():
         if not args.no_save:
             save_to_file = service.config.getboolean('OUTPUT', 'save_to_file', fallback=True)
             if save_to_file:
-                saved_path = service.save_to_file(formatted_output, args.output)
+                saved_path = service.save_to_file(formatted_output, args.output, output_format)
                 print(f"\n結果をファイルに保存しました: {saved_path}")
 
     except KeyboardInterrupt:
