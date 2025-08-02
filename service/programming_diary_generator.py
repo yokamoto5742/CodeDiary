@@ -70,33 +70,27 @@ class ProgrammingDiaryGenerator:
         try:
             self.claude_client.initialize()
 
-            # 日数が指定された場合の日付計算処理を追加
             if days:
                 since_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
                 until_date = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
 
-            # 設定ファイルからデフォルト値を取得（git_commit_history.pyと同様の処理）
             if not since_date and not until_date and not days:
                 since_date = self.config.get('GIT', 'default_since_date', fallback=None)
                 until_date = self.config.get('GIT', 'default_until_date', fallback=None)
 
-                # until_dateが空の場合は翌日を設定
                 if since_date and not until_date:
                     until_date = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
 
-                # 設定ファイルにも値がない場合はデフォルトで過去7日間
                 if not since_date and not until_date:
-                    default_days = 7
+                    default_days = 2
                     since_date = (datetime.now() - timedelta(days=default_days)).strftime('%Y-%m-%d')
                     until_date = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
 
-            # デバッグ情報を出力
             print(f"🔍 デバッグ情報:")
             print(f"   リポジトリパス: {self.git_service.repository_path}")
             print(f"   検索期間: {since_date} から {until_date}")
             print(f"   作成者フィルタ: {author or '全て'}")
 
-            # リポジトリ情報を確認
             repo_info = self.git_service.get_repository_info()
             print(f"   現在のブランチ: {repo_info['current_branch']}")
             print(f"   最新コミット: {repo_info['latest_commit']}")
@@ -112,8 +106,8 @@ class ProgrammingDiaryGenerator:
 
             if not commits:
                 # 期間を広げて再検索してみる
-                print("⚠️ 指定期間にコミットが見つかりませんでした。過去30日間で再検索します...")
-                extended_since = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+                print("⚠️ 指定期間にコミットが見つかりませんでした。過去7日間で再検索します...")
+                extended_since = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
                 extended_commits = self.git_service.get_commit_history(
                     since_date=extended_since,
                     until_date=until_date,
@@ -121,12 +115,12 @@ class ProgrammingDiaryGenerator:
                     max_count=5
                 )
                 if extended_commits:
-                    print(f"   過去30日間では {len(extended_commits)} 件のコミットが見つかりました")
+                    print(f"   過去7日間では {len(extended_commits)} 件のコミットが見つかりました")
                     print("   最新のコミット:")
                     for i, commit in enumerate(extended_commits[:3]):
                         print(f"     {i + 1}. {commit['timestamp']}: {commit['message']}")
                 else:
-                    print("   過去30日間でもコミットが見つかりませんでした")
+                    print("   過去7日間でもコミットが見つかりませんでした")
 
                 return "指定期間にコミット履歴が見つかりませんでした。", 0, 0
 
