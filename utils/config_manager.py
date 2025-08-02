@@ -3,6 +3,8 @@ import os
 import sys
 from typing import Any
 
+from dotenv import load_dotenv
+
 
 def get_config_path():
     if getattr(sys, 'frozen', False):
@@ -45,3 +47,6 @@ def save_config(config: configparser.ConfigParser):
     except IOError as e:
         print(f"設定ファイルの保存中にエラーが発生しました: {e}")
         raise
+
+CLAUDE_API_KEY = os.environ.get("CLAUDE_API_KEY")
+CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL")
