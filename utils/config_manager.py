@@ -1,9 +1,11 @@
 import configparser
 import os
 import sys
+from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
+
 
 
 def get_config_path():
@@ -16,8 +18,20 @@ def get_config_path():
 
     return os.path.join(base_path, 'config.ini')
 
+
 CONFIG_PATH = get_config_path()
 
+def load_environment_variables():
+    """環境変数を読み込む"""
+    current_dir = Path(__file__).parent.parent
+    env_path = current_dir / '.env'
+
+    if env_path.exists():
+        load_dotenv(env_path)
+        return True
+    return False
+
+load_environment_variables()
 
 
 def load_config() -> configparser.ConfigParser:
@@ -47,6 +61,7 @@ def save_config(config: configparser.ConfigParser):
     except IOError as e:
         print(f"設定ファイルの保存中にエラーが発生しました: {e}")
         raise
+
 
 CLAUDE_API_KEY = os.environ.get("CLAUDE_API_KEY")
 CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL")

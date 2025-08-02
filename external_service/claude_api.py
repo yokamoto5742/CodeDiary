@@ -18,7 +18,8 @@ class ClaudeAPIClient(BaseAPIClient):
                 self.client = Anthropic(api_key=self.api_key)
                 return True
             else:
-                raise APIError(MESSAGES["API_CREDENTIALS_MISSING"])
+                # 修正: 正しいメッセージキーを使用
+                raise APIError(MESSAGES["CLAUDE_API_CREDENTIALS_MISSING"])
         except Exception as e:
             raise APIError(f"Claude API初期化エラー: {str(e)}")
 

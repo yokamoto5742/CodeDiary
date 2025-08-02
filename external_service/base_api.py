@@ -6,6 +6,11 @@ from utils.constants import DEFAULT_DOCUMENT_TYPE
 from utils.exceptions import APIError
 
 
+def get_prompt(department: str, document_type: str, doctor: str):
+    """プロンプト取得関数のダミー実装（追加）"""
+    return None
+
+
 class BaseAPIClient(ABC):
     def __init__(self, api_key: str, default_model: str):
         self.api_key = api_key
@@ -57,7 +62,7 @@ class BaseAPIClient(ABC):
         prompt += f"\n【追加情報】{additional_info}"
 
         return prompt
-    
+
     def get_model_name(self,
                        department: str,
                        document_type: str,
