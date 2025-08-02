@@ -2,9 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Tuple, Optional
 
 from utils.config_manager import load_config
-from constants import DEFAULT_DOCUMENT_TYPE
+from utils.constants import DEFAULT_DOCUMENT_TYPE
 from utils.exceptions import APIError
-from utils.prompt_manager import get_prompt
 
 
 class BaseAPIClient(ABC):

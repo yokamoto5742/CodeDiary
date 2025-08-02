@@ -5,7 +5,7 @@ from external_service.base_api import BaseAPIClient
 from external_service.claude_api import ClaudeAPIClient
 from external_service.gemini_api import GeminiAPIClient
 from external_service.openai_api import OpenAIAPIClient
-from constants import DEFAULT_DOCUMENT_TYPE
+from utils.constants import DEFAULT_DOCUMENT_TYPE
 from utils.exceptions import APIError
 
 
