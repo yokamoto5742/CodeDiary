@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Tuple, Optional
 
-from utils.config import get_config
-from utils.constants import DEFAULT_DOCUMENT_TYPE
+from utils.config_manager import load_config
+from constants import DEFAULT_DOCUMENT_TYPE
 from utils.exceptions import APIError
 from utils.prompt_manager import get_prompt
 
@@ -42,7 +42,7 @@ class BaseAPIClient(ABC):
         prompt_data = get_prompt(department, document_type, doctor)
 
         if not prompt_data:
-            config = get_config()
+            config = load_config()
             prompt_template = config['PROMPTS']['summary']
         else:
             prompt_template = prompt_data['content']
