@@ -81,27 +81,30 @@ class ProgrammingDiaryGenerator:
         plain_text = re.sub(r'\n{3,}', '\n\n', plain_text)
         
         return plain_text.strip()
-    
-    def generate_diary(self, 
-                      since_date: Optional[str] = None,
-                      until_date: Optional[str] = None,
-                      days: Optional[int] = None,
-                      author: Optional[str] = None,
-                      max_count: Optional[int] = None) -> Tuple[str, int, int]:
+
+    def generate_diary(self,
+                       since_date: Optional[str] = None,
+                       until_date: Optional[str] = None,
+                       days: Optional[int] = None,
+                       author: Optional[str] = None,
+                       max_count: Optional[int] = None) -> Tuple[str, int, int]:
         """
         プログラミング日誌を生成
-        
+
         Args:
             since_date: 開始日 (YYYY-MM-DD形式)
             until_date: 終了日 (YYYY-MM-DD形式)
             days: 過去何日分を取得するか
             author: 作成者でフィルタ
             max_count: 最大取得件数
-            
+
         Returns:
             Tuple[str, int, int]: (生成された日誌, 入力トークン数, 出力トークン数)
         """
         try:
+            # Claude APIクライアントを初期化（追加）
+            self.claude_client.initialize()
+
             # Git履歴を取得
             commits = self.git_service.get_commit_history(
                 since_date=since_date,
@@ -109,30 +112,30 @@ class ProgrammingDiaryGenerator:
                 author=author,
                 max_count=max_count
             )
-            
+
             if not commits:
                 return "指定期間にコミット履歴が見つかりませんでした。", 0, 0
-            
+
             # プロンプトテンプレートを読み込み
             prompt_template = self._load_prompt_template()
-            
+
             # コミット履歴をフォーマット
             formatted_commits = self._format_commits_for_prompt(commits)
-            
+
             # Claude APIに送信するプロンプトを作成
             full_prompt = f"{prompt_template}\n\n## Git コミット履歴\n\n{formatted_commits}"
-            
+
             # Claude APIで日誌を生成
             diary_content, input_tokens, output_tokens = self.claude_client._generate_content(
                 prompt=full_prompt,
                 model_name=self.claude_client.default_model
             )
-            
+
             # マークダウンをプレーンテキストに変換
             plain_diary = self._convert_markdown_to_plain_text(diary_content)
-            
+
             return plain_diary, input_tokens, output_tokens
-            
+
         except Exception as e:
             raise Exception(f"プログラミング日誌の生成に失敗しました: {e}")
     
