@@ -2,7 +2,7 @@ from anthropic import Anthropic
 from typing import Tuple
 
 from external_service.base_api import BaseAPIClient
-from utils.config import CLAUDE_API_KEY, CLAUDE_MODEL
+from utils.config_manager import CLAUDE_API_KEY, CLAUDE_MODEL
 from utils.constants import MESSAGES
 from utils.exceptions import APIError
 
