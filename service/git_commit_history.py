@@ -196,22 +196,37 @@ def main():
         description="Gitコミット履歴取得サービス",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+
+    # 引数の定義を追加
+    parser.add_argument('--since', type=str, help='開始日 (YYYY-MM-DD形式)')
+    parser.add_argument('--until', type=str, help='終了日 (YYYY-MM-DD形式)')
+    parser.add_argument('--days', type=int, help='過去何日分を取得するか')
+    parser.add_argument('--author', type=str, help='作成者でフィルタ')
+    parser.add_argument('--max-count', type=int, help='最大取得件数')
+    parser.add_argument('--branch', type=str, help='対象ブランチ')
+    parser.add_argument('--format', type=str, choices=['table', 'json', 'csv'], help='出力形式')
+    parser.add_argument('--no-save', action='store_true', help='ファイル保存を無効にする')
+    parser.add_argument('--output', type=str, help='出力ファイル名')
+
     args = parser.parse_args()
 
     try:
         service = GitCommitHistoryService()
 
-        since_date = args.since
-        until_date = args.until
+        # config.iniからデフォルト値を取得
+        since_date = args.since or service.config.get('GIT', 'default_since_date', fallback=None)
+        until_date = args.until or service.config.get('GIT', 'default_until_date', fallback=None)
 
         if args.days:
             since_date = (datetime.now() - timedelta(days=args.days)).strftime('%Y-%m-%d')
             until_date = datetime.now().strftime('%Y-%m-%d')
 
         if not since_date and not until_date and not args.days:
-            since_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+            # デフォルトの日数をconfig.iniから取得
+            default_days = service.config.getint('GIT', 'default_days', fallback=30)
+            since_date = (datetime.now() - timedelta(days=default_days)).strftime('%Y-%m-%d')
             until_date = datetime.now().strftime('%Y-%m-%d')
-            print(f"期間が指定されていないため、過去30日間のコミット履歴を取得します")
+            print(f"期間が指定されていないため、過去{default_days}日間のコミット履歴を取得します")
 
         print("コミット履歴を取得中...")
         commits = service.get_commit_history(
