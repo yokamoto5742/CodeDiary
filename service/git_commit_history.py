@@ -3,7 +3,7 @@ import os
 import sys
 import subprocess
 import argparse
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone  # timezone を追加
 from pathlib import Path
 from typing import List, Dict, Optional
 
@@ -16,6 +16,8 @@ class GitCommitHistoryService:
     def __init__(self):
         self.config = load_config()
         self.repository_path = self._get_repository_path()
+        # JST タイムゾーンを定義
+        self.jst = timezone(timedelta(hours=9))
 
     def _get_repository_path(self) -> str:
         try:
@@ -38,12 +40,21 @@ class GitCommitHistoryService:
                            author: str = None,
                            max_count: int = None,
                            branch: str = None) -> List[Dict]:
-        cmd = ['git', 'log', '--pretty=format:%H|%an|%ae|%aI|%s', '--date=iso']
+        # JST基準でのgitコマンドを構築
+        cmd = ['git', 'log', '--pretty=format:%H|%an|%ae|%aI|%s']
+
+        # JST環境でのタイムゾーン処理を改善
+        env = os.environ.copy()
+        env['TZ'] = 'Asia/Tokyo'  # タイムゾーンを日本に設定
 
         if since_date:
-            cmd.append(f'--since={since_date}')
+            # since_dateに開始時刻を明示的に指定（JST）
+            since_datetime = f"{since_date} 00:00:00 +0900"
+            cmd.append(f'--since={since_datetime}')
         if until_date:
-            cmd.append(f'--until={until_date}')
+            # until_dateに終了時刻を明示的に指定（JST）
+            until_datetime = f"{until_date} 23:59:59 +0900"
+            cmd.append(f'--until={until_datetime}')
 
         try:
             result = subprocess.run(
@@ -51,7 +62,8 @@ class GitCommitHistoryService:
                 cwd=self.repository_path,
                 capture_output=True,
                 text=True,
-                encoding='utf-8'
+                encoding='utf-8',
+                env=env  # 環境変数を追加
             )
 
             if result.returncode != 0:
@@ -62,11 +74,22 @@ class GitCommitHistoryService:
                 if line:
                     parts = line.split('|')
                     if len(parts) >= 5:
+                        # タイムスタンプをJSTに変換
+                        timestamp_utc = parts[3]
+                        try:
+                            # ISO形式のタイムスタンプをJSTに変換
+                            dt_utc = datetime.fromisoformat(timestamp_utc.replace('Z', '+00:00'))
+                            dt_jst = dt_utc.astimezone(self.jst)
+                            timestamp_jst = dt_jst.isoformat()
+                        except ValueError:
+                            # 変換に失敗した場合は元のタイムスタンプを使用
+                            timestamp_jst = timestamp_utc
+
                         commits.append({
                             'hash': parts[0],
                             'author_name': parts[1],
                             'author_email': parts[2],
-                            'timestamp': parts[3],
+                            'timestamp': timestamp_jst,  # JST変換済み
                             'message': '|'.join(parts[4:])
                         })
 
@@ -101,7 +124,16 @@ class GitCommitHistoryService:
         output.append("")
 
         for i, commit in enumerate(commits, 1):
+            # JST時刻表示の改善
+            try:
+                dt = datetime.fromisoformat(commit['timestamp'])
+                formatted_time = dt.strftime("%Y/%m/%d %H:%M:%S (JST)")
+            except ValueError:
+                formatted_time = commit['timestamp']
+
+            output.append(f"{i:3d}. {formatted_time}")
             output.append(f"     メッセージ: {commit['message']}")
+            output.append("")
 
         return '\n'.join(output)
 
@@ -112,13 +144,15 @@ class GitCommitHistoryService:
 
                 if filename_format == 'commit_history_datetime.txt':
                     if output_format in ['json', 'llm_json']:
-                        filename = datetime.now().strftime('commit_history_%Y%m%d_%H%M%S.json')
+                        # JST基準でファイル名生成
+                        filename = datetime.now(self.jst).strftime('commit_history_%Y%m%d_%H%M%S.json')
                     else:
-                        filename = datetime.now().strftime('commit_history_%Y%m%d_%H%M%S.txt')
+                        filename = datetime.now(self.jst).strftime('commit_history_%Y%m%d_%H%M%S.txt')
                 elif '%' in filename_format:
                     if '%%' in filename_format:
                         filename_format = filename_format.replace('%%', '%')
-                    filename = datetime.now().strftime(filename_format)
+                    # JST基準でファイル名生成
+                    filename = datetime.now(self.jst).strftime(filename_format)
                     if output_format in ['json', 'llm_json'] and filename.endswith('.txt'):
                         filename = filename.replace('.txt', '.json')
                 else:
@@ -126,9 +160,9 @@ class GitCommitHistoryService:
 
             except Exception:
                 if output_format in ['json', 'llm_json']:
-                    filename = datetime.now().strftime('commit_history_%Y%m%d_%H%M%S.json')
+                    filename = datetime.now(self.jst).strftime('commit_history_%Y%m%d_%H%M%S.json')
                 else:
-                    filename = datetime.now().strftime('commit_history_%Y%m%d_%H%M%S.txt')
+                    filename = datetime.now(self.jst).strftime('commit_history_%Y%m%d_%H%M%S.txt')
 
         output_dir = self.config.get('OUTPUT', 'output_directory', fallback='logs')
         output_path = Path(self.repository_path) / output_dir
@@ -145,11 +179,16 @@ class GitCommitHistoryService:
 
     def get_repository_info(self) -> Dict:
         try:
+            # JST環境でのgitコマンド実行
+            env = os.environ.copy()
+            env['TZ'] = 'Asia/Tokyo'
+
             branch_result = subprocess.run(
                 ['git', 'branch', '--show-current'],
                 cwd=self.repository_path,
                 capture_output=True,
-                text=True
+                text=True,
+                env=env
             )
             current_branch = branch_result.stdout.strip()
 
@@ -157,7 +196,8 @@ class GitCommitHistoryService:
                 ['git', 'remote', 'get-url', 'origin'],
                 cwd=self.repository_path,
                 capture_output=True,
-                text=True
+                text=True,
+                env=env
             )
             remote_url = remote_result.stdout.strip() if remote_result.returncode == 0 else "未設定"
 
@@ -165,14 +205,22 @@ class GitCommitHistoryService:
                 ['git', 'log', '-1', '--pretty=format:%H|%an|%aI'],
                 cwd=self.repository_path,
                 capture_output=True,
-                text=True
+                text=True,
+                env=env
             )
 
             latest_commit_info = "情報なし"
             if latest_commit_result.returncode == 0 and latest_commit_result.stdout:
                 parts = latest_commit_result.stdout.split('|')
                 if len(parts) >= 3:
-                    latest_commit_info = f"{parts[0][:8]} by {parts[1]} on {parts[2]}"
+                    # JST時刻に変換
+                    try:
+                        dt_utc = datetime.fromisoformat(parts[2].replace('Z', '+00:00'))
+                        dt_jst = dt_utc.astimezone(self.jst)
+                        formatted_time = dt_jst.strftime("%Y/%m/%d %H:%M JST")
+                    except ValueError:
+                        formatted_time = parts[2]
+                    latest_commit_info = f"{parts[0][:8]} by {parts[1]} on {formatted_time}"
 
             return {
                 'path': self.repository_path,
@@ -190,11 +238,15 @@ class GitCommitHistoryService:
 
     def get_branch_list(self) -> List[str]:
         try:
+            env = os.environ.copy()
+            env['TZ'] = 'Asia/Tokyo'
+
             result = subprocess.run(
                 ['git', 'branch', '-a'],
                 cwd=self.repository_path,
                 capture_output=True,
-                text=True
+                text=True,
+                env=env
             )
 
             if result.returncode != 0:
@@ -237,13 +289,14 @@ def main():
         until_date = args.until or service.config.get('GIT', 'default_until_date', fallback=None)
 
         if args.days:
-            since_date = (datetime.now() - timedelta(days=args.days)).strftime('%Y-%m-%d')
-            until_date = datetime.now().strftime('%Y-%m-%d')
+            # JST基準での日付計算
+            since_date = (datetime.now(service.jst) - timedelta(days=args.days)).strftime('%Y-%m-%d')
+            until_date = datetime.now(service.jst).strftime('%Y-%m-%d')
 
         if not since_date and not until_date and not args.days:
             default_days = service.config.getint('GIT', 'default_days', fallback=30)
-            since_date = (datetime.now() - timedelta(days=default_days)).strftime('%Y-%m-%d')
-            until_date = datetime.now().strftime('%Y-%m-%d')
+            since_date = (datetime.now(service.jst) - timedelta(days=default_days)).strftime('%Y-%m-%d')
+            until_date = datetime.now(service.jst).strftime('%Y-%m-%d')
             print(f"期間が指定されていないため、過去{default_days}日間のコミット履歴を取得します")
 
         commits = service.get_commit_history(
