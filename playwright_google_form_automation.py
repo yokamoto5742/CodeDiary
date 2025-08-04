@@ -2,173 +2,75 @@ import datetime
 import time
 
 import pyperclip
-from playwright.sync_api import sync_playwright
-
-
-class GoogleFormAutomation:
-    """Googleフォームの自動入力を行うクラス"""
-    
-    def __init__(self, form_url: str):
-        self.form_url = form_url
-        self.playwright = None
-        self.browser = None
-        self.page = None
-    
-    def setup_browser(self):
-        """ブラウザのセットアップ"""
-        try:
-            self.playwright = sync_playwright().start()
-            # Chromeブラウザを起動（headless=Falseで画面表示）
-            self.browser = self.playwright.chromium.launch(
-                headless=False,
-                channel="chrome"  # インストール済みのChromeを使用
-            )
-            self.page = self.browser.new_page()
-            print("ブラウザのセットアップが完了しました。")
-        except Exception as e:
-            print(f"ブラウザのセットアップに失敗しました: {e}")
-            raise
-    
-    def open_form(self):
-        """Googleフォームを開く"""
-        try:
-            print("Googleフォームを開いています...")
-            self.page.goto(self.form_url)
-            self.page.wait_for_load_state("networkidle")
-            print("Googleフォームを開きました。")
-        except Exception as e:
-            print(f"フォームの読み込みに失敗しました: {e}")
-            raise
-    
-    def fill_creation_date(self):
-        """作成日に本日の日付を入力"""
-        try:
-            # 本日の日付を取得（YYYY/MM/DD形式）
-            today = datetime.date.today()
-            date_string = today.strftime("%Y/%m/%d")
-
-            print(f"作成日に {date_string} を入力しています...")
-
-            # 日付入力フィールドを探す（複数のセレクタを試行）
-            date_selectors = [
-                'input[type="date"]',
-                'input[aria-label*="日付"]',
-                'input[aria-label*="作成日"]',
-                'input[placeholder*="年/月/日"]',
-                '.quantumWizTextinputPaperinputInput[type="date"]'
-            ]
-
-            date_filled = False
-            for selector in date_selectors:
-                try:
-                    if self.page.query_selector(selector):
-                        self.page.fill(selector, date_string)
-                        date_filled = True
-                        print(f"日付フィールド ({selector}) に入力しました。")
-                        break
-                except Exception:
-                    continue
-
-            if not date_filled:
-                print("日付フィールドが見つかりませんでした。手動で入力してください。")
-
-        except Exception as e:
-            print(f"日付の入力に失敗しました: {e}")
-    
-    def fill_work_content(self):
-        """作業内容にクリップボードの内容を貼り付け"""
-        try:
-            # クリップボードの内容を取得
-            clipboard_content = pyperclip.paste()
-            
-            if not clipboard_content:
-                print("クリップボードが空です。")
-                return
-            
-            print("作業内容にクリップボードの内容を貼り付けています...")
-            
-            # テキストエリアを探す（複数のセレクタを試行）
-            text_selectors = [
-                'textarea[aria-label*="作業内容"]',
-                'textarea[aria-label*="回答を入力"]',
-                'textarea',
-                '.quantumWizTextinputPapertextareaInput',
-                'div[contenteditable="true"]'
-            ]
-            
-            content_filled = False
-            for selector in text_selectors:
-                try:
-                    elements = self.page.query_selector_all(selector)
-                    if elements:
-                        # 最初のテキストエリアに入力（通常は作業内容フィールド）
-                        elements[0].fill(clipboard_content)
-                        content_filled = True
-                        print(f"作業内容フィールド ({selector}) に貼り付けました。")
-                        break
-                except Exception:
-                    continue
-            
-            if not content_filled:
-                print("作業内容フィールドが見つかりませんでした。手動で入力してください。")
-                
-        except Exception as e:
-            print(f"作業内容の入力に失敗しました: {e}")
-    
-    def close_browser(self):
-        """ブラウザを閉じる"""
-        try:
-            if self.browser:
-                print("ブラウザを閉じています...")
-                time.sleep(2)  # 少し待機してからブラウザを閉じる
-                self.browser.close()
-            if self.playwright:
-                self.playwright.stop()
-            print("ブラウザを閉じました。")
-        except Exception as e:
-            print(f"ブラウザの終了中にエラーが発生しました: {e}")
-    
-    def run_automation(self):
-        """自動化の実行"""
-        try:
-            print("=== Googleフォーム自動入力を開始します ===")
-            
-            # ブラウザのセットアップ
-            self.setup_browser()
-            
-            # フォームを開く
-            self.open_form()
-            
-            # 少し待機（フォームの読み込み完了を待つ）
-            time.sleep(3)
-            
-            # 作成日を入力
-            self.fill_creation_date()
-            
-            # 作業内容を入力
-            self.fill_work_content()
-            
-            print("=== 自動入力が完了しました ===")
-            print("内容を確認して、送信ボタンを手動でクリックしてください。")
-            
-            # ユーザーが確認できるように少し待機
-            input("Enterキーを押すとブラウザが閉じます...")
-            
-        except Exception as e:
-            print(f"自動化の実行中にエラーが発生しました: {e}")
-        finally:
-            self.close_browser()
+from playwright.sync_api import sync_playwright, expect
 
 
 def main():
-    """メイン関数"""
-    # GoogleフォームのURL
     form_url = "https://forms.gle/cEnjC4A7rFdMs6dD6"
-    
-    # 自動化を実行
-    automation = GoogleFormAutomation(form_url)
-    automation.run_automation()
+    today_date_str = datetime.datetime.now().strftime("%Y-%m-%d")
 
+    try:
+        clipboard_text = pyperclip.paste()
+        if not clipboard_text.strip():
+            print("エラー: クリップボードにテキストがありません。作業内容をコピーしてから実行してください。")
+            return
+    except Exception as e:
+        print(f"エラー: クリップボードにアクセスできませんでした: {e}")
+        return
+
+    print("=== Googleフォーム自動入力を開始します ===")
+    print(f"作成日: {today_date_str}")
+    print(f"作業内容: {clipboard_text[:50]}...")
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(
+            headless=False,
+            channel="chrome"
+        )
+        page = browser.new_page()
+
+        try:
+            page.goto(form_url)
+            print("作成日を入力しています...")
+
+            date_input = page.locator('input[type="date"]')
+            expect(date_input).to_be_visible(timeout=10000)
+
+            date_input.fill(today_date_str)
+            print(f"作成日 ({today_date_str}) を入力しました。")
+            print("作業内容を入力しています...")
+
+            content_selectors = [
+                'textarea[aria-label="作業内容"]',
+                'textarea[aria-label*="回答を入力"]',
+                'textarea'
+            ]
+
+            content_filled = False
+            for selector in content_selectors:
+                try:
+                    content_textarea = page.locator(selector).first
+                    if content_textarea.is_visible():
+                        expect(content_textarea).to_be_visible(timeout=5000)
+                        content_textarea.fill(clipboard_text)
+                        print(f"作業内容を入力しました（セレクタ: {selector}）。")
+                        content_filled = True
+                        break
+                except Exception:
+                    continue
+
+            if not content_filled:
+                print("警告: 作業内容フィールドが見つかりませんでした。手動で入力してください。")
+
+            print("=== 自動入力が完了しました ===")
+            print("ブラウザを閉じるとプログラムが終了します...")
+            page.wait_for_event('close')
+
+        except Exception as e:
+            print(f"エラーが発生しました: {e}")
+            print("ブラウザは開いたままにします。手動で操作してください。")
+            print("ブラウザを閉じるとプログラムが終了します...")
+            page.wait_for_event('close')
 
 if __name__ == "__main__":
     main()
