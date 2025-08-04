@@ -3,7 +3,7 @@ import json
 import os
 import re
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 
@@ -20,6 +20,8 @@ class ProgrammingDiaryGenerator:
         self.git_service = GitCommitHistoryService()
         self.claude_client = ClaudeAPIClient()
         self.prompt_template_path = self._get_prompt_template_path()
+        # JST タイムゾーンを定義
+        self.jst = timezone(timedelta(hours=9))
 
     def _get_prompt_template_path(self) -> str:
         base_path = Path(__file__).parent.parent
@@ -71,20 +73,21 @@ class ProgrammingDiaryGenerator:
             self.claude_client.initialize()
 
             if days:
-                since_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
-                until_date = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
+                # JST タイムゾーンを使用して日付計算
+                since_date = (datetime.now(self.jst) - timedelta(days=days)).strftime('%Y-%m-%d')
+                until_date = (datetime.now(self.jst) + timedelta(days=1)).strftime('%Y-%m-%d')
 
             if not since_date and not until_date and not days:
                 since_date = self.config.get('GIT', 'default_since_date', fallback=None)
                 until_date = self.config.get('GIT', 'default_until_date', fallback=None)
 
                 if since_date and not until_date:
-                    until_date = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
+                    until_date = (datetime.now(self.jst) + timedelta(days=1)).strftime('%Y-%m-%d')
 
                 if not since_date and not until_date:
                     default_days = 2
-                    since_date = (datetime.now() - timedelta(days=default_days)).strftime('%Y-%m-%d')
-                    until_date = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
+                    since_date = (datetime.now(self.jst) - timedelta(days=default_days)).strftime('%Y-%m-%d')
+                    until_date = (datetime.now(self.jst) + timedelta(days=1)).strftime('%Y-%m-%d')
 
             print(f"🔍 デバッグ情報:")
             print(f"   リポジトリパス: {self.git_service.repository_path}")
@@ -107,7 +110,7 @@ class ProgrammingDiaryGenerator:
             if not commits:
                 # 期間を広げて再検索してみる
                 print("⚠️ 指定期間にコミットが見つかりませんでした。過去7日間で再検索します...")
-                extended_since = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+                extended_since = (datetime.now(self.jst) - timedelta(days=7)).strftime('%Y-%m-%d')
                 extended_commits = self.git_service.get_commit_history(
                     since_date=extended_since,
                     until_date=until_date,
@@ -128,7 +131,8 @@ class ProgrammingDiaryGenerator:
 
             formatted_commits = self._format_commits_for_prompt(commits)
 
-            full_prompt = f"{prompt_template}\n\n## Git コミット履歴\n\n{formatted_commits}"
+            # プロンプトにJSTタイムゾーン情報を追加
+            full_prompt = f"{prompt_template}\n\n注意: 日付と曜日は日本標準時（JST）で表示してください。\n\n## Git コミット履歴\n\n{formatted_commits}"
 
             diary_content, input_tokens, output_tokens = self.claude_client._generate_content(
                 prompt=full_prompt,
@@ -144,7 +148,8 @@ class ProgrammingDiaryGenerator:
 
     def save_diary_to_file(self, diary_content: str, filename: Optional[str] = None) -> str:
         if not filename:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            # JST タイムゾーンを使用してファイル名生成
+            timestamp = datetime.now(self.jst).strftime("%Y%m%d_%H%M%S")
             filename = f"programming_diary_{timestamp}.txt"
 
         output_dir = self.config.get('OUTPUT', 'output_directory', fallback='logs')
