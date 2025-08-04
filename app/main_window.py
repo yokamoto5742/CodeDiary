@@ -21,7 +21,7 @@ class CodeDiaryMainWindow:
         self._setup_bindings()
         
     def _setup_ui(self):
-        self.root.title(f"CodeDiary v[{__version__}]")
+        self.root.title(f"CodeDiary v{__version__}")
         self.root.geometry("800x600")
         self.root.resizable(True, True)
 
