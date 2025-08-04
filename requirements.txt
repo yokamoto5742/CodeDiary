@@ -7,6 +7,7 @@ colorama==0.4.6
 coverage==7.10.1
 distro==1.9.0
 dotenv==0.9.9
+greenlet==3.2.3
 h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1
@@ -15,12 +16,15 @@ iniconfig==2.1.0
 jiter==0.10.0
 packaging==25.0
 pefile==2023.2.7
+playwright==1.54.0
 pluggy==1.6.0
 pydantic==2.11.7
 pydantic_core==2.33.2
+pyee==13.0.0
 Pygments==2.19.2
 pyinstaller==6.14.2
 pyinstaller-hooks-contrib==2025.8
+pyperclip==1.9.0
 pytest==8.4.1
 pytest-cov==6.2.1
 python-dotenv==1.1.1
