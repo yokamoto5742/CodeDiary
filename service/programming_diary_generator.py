@@ -42,7 +42,15 @@ class ProgrammingDiaryGenerator:
 
         formatted_commits = []
         for commit in commits:
-            commit_info = f"日時: {commit['timestamp']}\nメッセージ: {commit['message']}\n"
+            try:
+                dt = datetime.fromisoformat(commit['timestamp'])
+                weekdays = ['月', '火', '水', '木', '金', '土', '日']
+                weekday = weekdays[dt.weekday()]
+                date_str = dt.strftime(f"%Y年%m月%d日({weekday})")
+            except (ValueError, IndexError):
+                date_str = commit['timestamp']
+
+            commit_info = f"日時: {date_str}\nメッセージ: {commit['message']}\n"
             formatted_commits.append(commit_info)
 
         return "\n".join(formatted_commits)
