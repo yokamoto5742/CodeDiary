@@ -10,8 +10,9 @@ def build_executable():
         "--name=CodeDiary",
         "--windowed",
         "--icon=assets/CodeDiary.ico",
+        "--add-data", ".env:.",
         "--add-data", "utils/config.ini:.",
-        "--add-data", "utils/prompt_template.md:.",
+        "--add-data", "utils/prompt_template.md",
         "main.py"
     ])
 
