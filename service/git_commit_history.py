@@ -3,7 +3,7 @@ import os
 import sys
 import subprocess
 import argparse
-from datetime import datetime, timedelta, timezone  # timezone を追加
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List, Dict
 
@@ -42,14 +42,12 @@ class GitCommitHistoryService:
         cmd = ['git', 'log', '--pretty=format:%H|%an|%ae|%aI|%s']
 
         env = os.environ.copy()
-        env['TZ'] = 'Asia/Tokyo'  # タイムゾーンを日本に設定
+        env['TZ'] = 'Asia/Tokyo'
 
         if since_date:
-            # since_dateに開始時刻を明示的に指定（JST）
             since_datetime = f"{since_date} 00:00:00 +0900"
             cmd.append(f'--since={since_datetime}')
         if until_date:
-            # until_dateに終了時刻を明示的に指定（JST）
             until_datetime = f"{until_date} 23:59:59 +0900"
             cmd.append(f'--until={until_datetime}')
 
@@ -60,7 +58,7 @@ class GitCommitHistoryService:
                 capture_output=True,
                 text=True,
                 encoding='utf-8',
-                env=env  # 環境変数を追加
+                env=env
             )
 
             if result.returncode != 0:
@@ -71,10 +69,8 @@ class GitCommitHistoryService:
                 if line:
                     parts = line.split('|')
                     if len(parts) >= 5:
-                        # タイムスタンプをJSTに変換
                         timestamp_utc = parts[3]
                         try:
-                            # ISO形式のタイムスタンプをJSTに変換
                             dt_utc = datetime.fromisoformat(timestamp_utc.replace('Z', '+00:00'))
                             dt_jst = dt_utc.astimezone(self.jst)
                             timestamp_jst = dt_jst.isoformat()
@@ -86,7 +82,7 @@ class GitCommitHistoryService:
                             'hash': parts[0],
                             'author_name': parts[1],
                             'author_email': parts[2],
-                            'timestamp': timestamp_jst,  # JST変換済み
+                            'timestamp': timestamp_jst,
                             'message': '|'.join(parts[4:])
                         })
 
@@ -121,7 +117,6 @@ class GitCommitHistoryService:
         output.append("")
 
         for i, commit in enumerate(commits, 1):
-            # JST時刻表示の改善
             try:
                 dt = datetime.fromisoformat(commit['timestamp'])
                 formatted_time = dt.strftime("%Y/%m/%d %H:%M:%S (JST)")
@@ -134,49 +129,8 @@ class GitCommitHistoryService:
 
         return '\n'.join(output)
 
-    def save_to_file(self, content: str, filename: str = None, output_format: str = 'table') -> str:
-        if not filename:
-            try:
-                filename_format = self.config.get('OUTPUT', 'filename_format', fallback='commit_history_datetime.txt')
-
-                if filename_format == 'commit_history_datetime.txt':
-                    if output_format in ['json', 'llm_json']:
-                        # JST基準でファイル名生成
-                        filename = datetime.now(self.jst).strftime('commit_history_%Y%m%d_%H%M%S.json')
-                    else:
-                        filename = datetime.now(self.jst).strftime('commit_history_%Y%m%d_%H%M%S.txt')
-                elif '%' in filename_format:
-                    if '%%' in filename_format:
-                        filename_format = filename_format.replace('%%', '%')
-                    # JST基準でファイル名生成
-                    filename = datetime.now(self.jst).strftime(filename_format)
-                    if output_format in ['json', 'llm_json'] and filename.endswith('.txt'):
-                        filename = filename.replace('.txt', '.json')
-                else:
-                    filename = filename_format
-
-            except Exception:
-                if output_format in ['json', 'llm_json']:
-                    filename = datetime.now(self.jst).strftime('commit_history_%Y%m%d_%H%M%S.json')
-                else:
-                    filename = datetime.now(self.jst).strftime('commit_history_%Y%m%d_%H%M%S.txt')
-
-        output_dir = self.config.get('OUTPUT', 'output_directory', fallback='logs')
-        output_path = Path(self.repository_path) / output_dir
-        output_path.mkdir(exist_ok=True)
-
-        file_path = output_path / filename
-
-        try:
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(content)
-            return str(file_path)
-        except Exception as e:
-            raise Exception(f"ファイルの保存に失敗しました: {e}")
-
     def get_repository_info(self) -> Dict:
         try:
-            # JST環境でのgitコマンド実行
             env = os.environ.copy()
             env['TZ'] = 'Asia/Tokyo'
 
@@ -210,7 +164,6 @@ class GitCommitHistoryService:
             if latest_commit_result.returncode == 0 and latest_commit_result.stdout:
                 parts = latest_commit_result.stdout.split('|')
                 if len(parts) >= 3:
-                    # JST時刻に変換
                     try:
                         dt_utc = datetime.fromisoformat(parts[2].replace('Z', '+00:00'))
                         dt_jst = dt_utc.astimezone(self.jst)
@@ -274,8 +227,6 @@ def main():
     parser.add_argument('--max-count', type=int, help='最大取得件数')
     parser.add_argument('--branch', type=str, help='対象ブランチ')
     parser.add_argument('--format', type=str, choices=['table', 'json', 'llm_json', 'csv'], help='出力形式')
-    parser.add_argument('--no-save', action='store_true', help='ファイル保存を無効にする')
-    parser.add_argument('--output', type=str, help='出力ファイル名')
 
     args = parser.parse_args()
 
@@ -286,12 +237,11 @@ def main():
         until_date = args.until or service.config.get('GIT', 'default_until_date', fallback=None)
 
         if args.days:
-            # JST基準での日付計算
             since_date = (datetime.now(service.jst) - timedelta(days=args.days)).strftime('%Y-%m-%d')
             until_date = datetime.now(service.jst).strftime('%Y-%m-%d')
 
         if not since_date and not until_date and not args.days:
-            default_days = service.config.getint('GIT', 'default_days', fallback=30)
+            default_days = service.config.getint('GIT', 'default_days', fallback=7)
             since_date = (datetime.now(service.jst) - timedelta(days=default_days)).strftime('%Y-%m-%d')
             until_date = datetime.now(service.jst).strftime('%Y-%m-%d')
             print(f"期間が指定されていないため、過去{default_days}日間のコミット履歴を取得します")
@@ -306,14 +256,6 @@ def main():
 
         output_format = args.format or service.config.get('GIT', 'output_format', fallback='table')
         formatted_output = service.format_output(commits, output_format)
-
-        print(formatted_output)
-
-        if not args.no_save:
-            save_to_file = service.config.getboolean('OUTPUT', 'save_to_file', fallback=True)
-            if save_to_file:
-                saved_path = service.save_to_file(formatted_output, args.output, output_format)
-                print(f"\n結果をファイルに保存しました: {saved_path}")
 
     except KeyboardInterrupt:
         print("\n処理が中断されました。")
