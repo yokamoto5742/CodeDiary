@@ -1,8 +1,8 @@
-import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog, filedialog
-from datetime import datetime, timezone, timedelta
-from pathlib import Path
 import threading
+import tkinter as tk
+from tkinter import ttk, messagebox, filedialog
+from datetime import datetime, timezone, timedelta
+
 
 from app import __version__
 from service.programming_diary_generator import ProgrammingDiaryGenerator
@@ -129,7 +129,6 @@ class CodeDiaryMainWindow:
         self.progress_label.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 5))
         
     def _setup_bindings(self):
-        """イベントバインディングのセットアップ"""
         # Enterキーで日誌作成
         self.root.bind('<Return>', lambda e: self._create_diary())
         
@@ -140,18 +139,16 @@ class CodeDiaryMainWindow:
         self.root.bind('<Control-l>', lambda e: self._clear_text())
         
     def _set_placeholder_text(self):
-        """プレースホルダーテキストを設定"""
         self.diary_text.config(state=tk.NORMAL)
         self.diary_text.delete(1.0, tk.END)
         self.diary_text.insert(1.0, "[ここに日誌を出力]")
         self.diary_text.config(state=tk.DISABLED)
         
     def _create_diary(self):
-        """日誌を作成"""
         try:
             # ボタンを無効化
             self._set_buttons_state(False)
-            self.progress_var.set("日誌を生成中...")
+            self.progress_var.set("日誌生成中...")
             
             # 日付の取得と変換
             start_date = self._convert_date_format(self.start_date_var.get())
@@ -175,7 +172,6 @@ class CodeDiaryMainWindow:
             self.progress_var.set("")
             
     def _generate_diary_thread(self, start_date, end_date):
-        """日誌生成の実際の処理（別スレッド）"""
         try:
             # 日誌を生成
             diary_content, input_tokens, output_tokens = self.diary_generator.generate_diary(
@@ -191,7 +187,6 @@ class CodeDiaryMainWindow:
             self.root.after(0, self._display_error, str(e))
             
     def _display_diary_result(self, diary_content, input_tokens, output_tokens):
-        """日誌結果を表示"""
         try:
             # テキストエリアに結果を表示
             self.diary_text.config(state=tk.NORMAL)
@@ -218,13 +213,11 @@ class CodeDiaryMainWindow:
             self._display_error(f"結果表示エラー: {str(e)}")
             
     def _display_error(self, error_message):
-        """エラーを表示"""
         messagebox.showerror("エラー", error_message)
         self._set_buttons_state(True)
         self.progress_var.set("")
         
     def _copy_all_text(self):
-        """全文をクリップボードにコピー"""
         try:
             content = self.diary_text.get(1.0, tk.END).strip()
             if content and content != "[ここに日誌を出力]":
@@ -237,13 +230,11 @@ class CodeDiaryMainWindow:
             messagebox.showerror("エラー", f"コピー中にエラーが発生しました: {str(e)}")
             
     def _clear_text(self):
-        """テキストエリアをクリア"""
         self._set_placeholder_text()
         self.copy_button.config(state=tk.DISABLED)
         self.progress_var.set("")
         
     def _setup_repository(self):
-        """リポジトリ設定ダイアログを表示"""
         try:
             current_path = self.config.get('GIT', 'repository_path', fallback='')
             
@@ -271,7 +262,6 @@ class CodeDiaryMainWindow:
             messagebox.showerror("エラー", f"リポジトリ設定中にエラーが発生しました: {str(e)}")
             
     def _convert_date_format(self, date_str):
-        """日付形式を変換（YYYY/MM/DD → YYYY-MM-DD）"""
         try:
             if not date_str.strip():
                 return None
@@ -287,7 +277,6 @@ class CodeDiaryMainWindow:
             return None
             
     def _set_buttons_state(self, enabled):
-        """ボタンの有効/無効を設定"""
         state = tk.NORMAL if enabled else tk.DISABLED
         self.create_button.config(state=state)
         self.clear_button.config(state=state)
