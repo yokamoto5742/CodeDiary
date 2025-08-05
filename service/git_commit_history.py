@@ -5,9 +5,9 @@ import subprocess
 import argparse
 from datetime import datetime, timedelta, timezone  # timezone を追加
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict
 
-from utils.config_manager import load_config, save_config
+from utils.config_manager import load_config
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -16,7 +16,6 @@ class GitCommitHistoryService:
     def __init__(self):
         self.config = load_config()
         self.repository_path = self._get_repository_path()
-        # JST タイムゾーンを定義
         self.jst = timezone(timedelta(hours=9))
 
     def _get_repository_path(self) -> str:
@@ -40,10 +39,8 @@ class GitCommitHistoryService:
                            author: str = None,
                            max_count: int = None,
                            branch: str = None) -> List[Dict]:
-        # JST基準でのgitコマンドを構築
         cmd = ['git', 'log', '--pretty=format:%H|%an|%ae|%aI|%s']
 
-        # JST環境でのタイムゾーン処理を改善
         env = os.environ.copy()
         env['TZ'] = 'Asia/Tokyo'  # タイムゾーンを日本に設定
 

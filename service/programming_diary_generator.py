@@ -20,7 +20,6 @@ class ProgrammingDiaryGenerator:
         self.git_service = GitCommitHistoryService()
         self.claude_client = ClaudeAPIClient()
         self.prompt_template_path = self._get_prompt_template_path()
-        # JST タイムゾーンを定義
         self.jst = timezone(timedelta(hours=9))
 
     def _get_prompt_template_path(self) -> str:

@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timedelta, timezone
 
 import pyperclip
 from playwright.sync_api import sync_playwright, expect
@@ -6,7 +6,8 @@ from playwright.sync_api import sync_playwright, expect
 
 def main():
     form_url = "https://forms.gle/cEnjC4A7rFdMs6dD6"
-    today_date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+    jst = timezone(timedelta(hours=9))
+    today_date_str = datetime.now(jst).strftime("%Y-%m-%d")
 
     try:
         clipboard_text = pyperclip.paste()
