@@ -4,7 +4,7 @@ import pyperclip
 from playwright.sync_api import sync_playwright, expect
 
 
-def main():
+def google_form_automation():
     form_url = "https://forms.gle/cEnjC4A7rFdMs6dD6"
     jst = timezone(timedelta(hours=9))
     today_date_str = datetime.now(jst).strftime("%Y-%m-%d")
@@ -73,4 +73,4 @@ def main():
             page.wait_for_event('close')
 
 if __name__ == "__main__":
-    main()
+    google_form_automation()
