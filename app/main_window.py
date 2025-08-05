@@ -194,7 +194,6 @@ class CodeDiaryMainWindow:
             self.diary_text.insert(1.0, diary_content)
             self.diary_text.config(state=tk.DISABLED)
 
-            # 自動的に全文をクリップボードにコピー
             self.root.clipboard_clear()
             self.root.clipboard_append(diary_content)
 
@@ -206,11 +205,6 @@ class CodeDiaryMainWindow:
             # ボタンの状態を復元
             self._set_buttons_state(True)
             self.copy_button.config(state=tk.NORMAL)
-
-            # 完了メッセージ
-            messagebox.showinfo("完了", "日誌を生成し、クリップボードにコピーしました。")
-
-            # Google Form自動化を別スレッドで実行
             self._execute_google_form_automation()
 
         except Exception as e:
@@ -219,9 +213,7 @@ class CodeDiaryMainWindow:
     def _execute_google_form_automation(self):
         def run_google_form():
             try:
-                self.progress_var.set("Google Formに入力中...")
                 google_form_automation()
-                self.root.after(0, lambda: self.progress_var.set("Google Form入力完了"))
             except Exception as e:
                 self.root.after(0, lambda: self.progress_var.set(f"Google Form入力エラー: {str(e)}"))
 
