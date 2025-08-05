@@ -1,4 +1,5 @@
 import datetime
+from pathlib import Path
 
 import pyperclip
 from playwright.sync_api import sync_playwright, expect
@@ -21,11 +22,15 @@ def main():
     print(f"作成日: {today_date_str}")
     print(f"作業内容: {clipboard_text[:50]}...")
 
+    chrome_user_data = Path.home() / "AppData" / "Local" / "Google" / "Chrome" / "User Data"
+
     with sync_playwright() as p:
-        browser = p.chromium.launch(
+        context = p.chromium.launch_persistent_context(
+            user_data_dir=str(chrome_user_data),
             headless=False,
             channel="chrome"
         )
+
         page = browser.new_page()
 
         try:
