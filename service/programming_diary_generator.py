@@ -1,13 +1,11 @@
-import argparse
 import re
-import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 
 from external_service.claude_api import ClaudeAPIClient
 from service.git_commit_history import GitCommitHistoryService
-from utils.config_manager import load_config, save_config
+from utils.config_manager import load_config
 from utils.env_loader import load_environment_variables
 
 
@@ -26,7 +24,7 @@ class ProgrammingDiaryGenerator:
 
     def _load_prompt_template(self) -> str:
         try:
-            with open(self.prompt_template_path, 'r', encoding='utf-8') as f:
+            with open(self.prompt_template_path, encoding='utf-8') as f:
                 return f.read()
         except FileNotFoundError:
             raise Exception(f"プロンプトテンプレートファイルが見つかりません: {self.prompt_template_path}")
@@ -78,7 +76,6 @@ class ProgrammingDiaryGenerator:
             self.claude_client.initialize()
 
             if days:
-                # JST タイムゾーンを使用して日付計算
                 since_date = (datetime.now(self.jst) - timedelta(days=days)).strftime('%Y-%m-%d')
                 until_date = (datetime.now(self.jst) + timedelta(days=1)).strftime('%Y-%m-%d')
 
@@ -113,7 +110,6 @@ class ProgrammingDiaryGenerator:
             print(f"   取得したコミット数: {len(commits)}")
 
             if not commits:
-                # 期間を広げて再検索してみる
                 print("⚠️ 指定期間にコミットが見つかりませんでした。過去7日間で再検索します...")
                 extended_since = (datetime.now(self.jst) - timedelta(days=7)).strftime('%Y-%m-%d')
                 extended_commits = self.git_service.get_commit_history(
@@ -136,8 +132,7 @@ class ProgrammingDiaryGenerator:
 
             formatted_commits = self._format_commits_for_prompt(commits)
 
-            # プロンプトにJSTタイムゾーン情報を追加
-            full_prompt = f"{prompt_template}\n\n注意: 日付と曜日は日本標準時（JST）で表示してください。\n\n## Git コミット履歴\n\n{formatted_commits}"
+            full_prompt = f"{prompt_template}\n\n## Git コミット履歴\n\n{formatted_commits}"
 
             diary_content, input_tokens, output_tokens = self.claude_client._generate_content(
                 prompt=full_prompt,
@@ -150,126 +145,3 @@ class ProgrammingDiaryGenerator:
 
         except Exception as e:
             raise Exception(f"プログラミング日誌の生成に失敗しました: {e}")
-
-    def save_diary_to_file(self, diary_content: str, filename: Optional[str] = None) -> str:
-        if not filename:
-            # JST タイムゾーンを使用してファイル名生成
-            timestamp = datetime.now(self.jst).strftime("%Y%m%d_%H%M%S")
-            filename = f"programming_diary_{timestamp}.txt"
-
-        output_dir = self.config.get('OUTPUT', 'output_directory', fallback='logs')
-        output_path = Path(self.git_service.repository_path) / output_dir
-        output_path.mkdir(exist_ok=True)
-
-        file_path = output_path / filename
-
-        try:
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(diary_content)
-            return str(file_path)
-        except Exception as e:
-            raise Exception(f"ファイルの保存に失敗しました: {e}")
-
-    def generate_and_save_diary(self,
-                                since_date: Optional[str] = None,
-                                until_date: Optional[str] = None,
-                                days: Optional[int] = None,
-                                author: Optional[str] = None,
-                                max_count: Optional[int] = None,
-                                filename: Optional[str] = None) -> Dict[str, any]:
-        try:
-            diary_content, input_tokens, output_tokens = self.generate_diary(
-                since_date=since_date,
-                until_date=until_date,
-                days=days,
-                author=author,
-                max_count=max_count
-            )
-
-            saved_path = self.save_diary_to_file(diary_content, filename)
-
-            return {
-                'success': True,
-                'diary_content': diary_content,
-                'saved_path': saved_path,
-                'input_tokens': input_tokens,
-                'output_tokens': output_tokens,
-                'total_tokens': input_tokens + output_tokens
-            }
-
-        except Exception as e:
-            return {
-                'success': False,
-                'error': str(e),
-                'diary_content': None,
-                'saved_path': None,
-                'input_tokens': 0,
-                'output_tokens': 0,
-                'total_tokens': 0
-            }
-
-
-def main():
-    parser = argparse.ArgumentParser(description="プログラミング日誌生成ツール")
-    parser.add_argument('--since', type=str, help='開始日 (YYYY-MM-DD形式)')
-    parser.add_argument('--until', type=str, help='終了日 (YYYY-MM-DD形式)')
-    parser.add_argument('--days', type=int, help='過去何日分を取得するか')
-    parser.add_argument('--author', type=str, help='作成者でフィルタ')
-    parser.add_argument('--max-count', type=int, help='最大取得件数')
-    parser.add_argument('--output', type=str, help='出力ファイル名')
-    parser.add_argument('--no-save', action='store_true', help='ファイル保存を無効にする')
-
-    args = parser.parse_args()
-
-    try:
-        generator = ProgrammingDiaryGenerator()
-
-        print("プログラミング日誌を生成中...")
-
-        if args.no_save:
-            diary_content, input_tokens, output_tokens = generator.generate_diary(
-                since_date=args.since,
-                until_date=args.until,
-                days=args.days,
-                author=args.author,
-                max_count=args.max_count
-            )
-
-            print("\n" + "=" * 60)
-            print("生成されたプログラミング日誌")
-            print("=" * 60)
-            print(diary_content)
-            print(f"\n使用トークン数: 入力={input_tokens}, 出力={output_tokens}, 合計={input_tokens + output_tokens}")
-
-        else:
-            result = generator.generate_and_save_diary(
-                since_date=args.since,
-                until_date=args.until,
-                days=args.days,
-                author=args.author,
-                max_count=args.max_count,
-                filename=args.output
-            )
-
-            if result['success']:
-                print(f"✅ プログラミング日誌を生成しました: {result['saved_path']}")
-                print(
-                    f"使用トークン数: 入力={result['input_tokens']}, 出力={result['output_tokens']}, 合計={result['total_tokens']}")
-                print("\n" + "=" * 60)
-                print("生成された内容のプレビュー")
-                print("=" * 60)
-                print(result['diary_content'][:500] + ("..." if len(result['diary_content']) > 500 else ""))
-            else:
-                print(f"❌ エラー: {result['error']}")
-                sys.exit(1)
-
-    except KeyboardInterrupt:
-        print("\n処理が中断されました。")
-        sys.exit(1)
-    except Exception as e:
-        print(f"❌ エラー: {e}")
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
