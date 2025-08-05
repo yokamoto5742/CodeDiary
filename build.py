@@ -1,5 +1,4 @@
 import subprocess
-import sys
 
 from scripts.version_manager import update_version
 
@@ -8,11 +7,11 @@ def build_executable():
     new_version = update_version()
     subprocess.run([
         "pyinstaller",
-        "--name=ManualSearch",
+        "--name=CodeDiary",
         "--windowed",
-        "--icon=assets/ManualSearch.ico",
+        "--icon=assets/CodeDiary.ico",
         "--add-data", "utils/config.ini:.",
-        "--add-data", "templates:templates",
+        "--add-data", "utils/prompt_template.md:.",
         "main.py"
     ])
 
