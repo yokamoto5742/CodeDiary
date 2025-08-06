@@ -1,7 +1,10 @@
+import locale
 import threading
 import tkinter as tk
 from datetime import datetime, timezone, timedelta
 from tkinter import ttk, messagebox, filedialog
+
+from tkcalendar import DateEntry
 
 from app import __version__
 from service.google_form_automation import google_form_automation
@@ -17,8 +20,28 @@ class CodeDiaryMainWindow:
 
         self.jst = timezone(timedelta(hours=9))
 
+        # ロケールの設定（日本語対応）
+        self._setup_locale()
+
         self._setup_ui()
         self._setup_bindings()
+
+    def _setup_locale(self):
+        """日本語ロケールの設定"""
+        try:
+            # 日本語ロケールを試行
+            locale.setlocale(locale.LC_ALL, 'ja_JP.UTF-8')
+        except locale.Error:
+            try:
+                # Windows用の日本語ロケール
+                locale.setlocale(locale.LC_ALL, 'Japanese_Japan.932')
+            except locale.Error:
+                try:
+                    # 別のWindows日本語ロケール
+                    locale.setlocale(locale.LC_ALL, 'ja')
+                except locale.Error:
+                    # フォールバック：デフォルトロケール
+                    print("警告: 日本語ロケールの設定に失敗しました。デフォルトロケールを使用します。")
 
     def _setup_ui(self):
         self.root.title(f"CodeDiary v{__version__}")
@@ -33,25 +56,70 @@ class CodeDiaryMainWindow:
         main_frame.columnconfigure(1, weight=1)
         main_frame.rowconfigure(2, weight=1)
 
+        # 日付選択フレーム
         date_frame = ttk.LabelFrame(main_frame, text="期間設定", padding="5")
         date_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
         date_frame.columnconfigure(1, weight=1)
         date_frame.columnconfigure(3, weight=1)
 
+        # 開始日カレンダー
         ttk.Label(date_frame, text="開始日").grid(row=0, column=0, sticky=tk.W, padx=(0, 5))
-        self.start_date_var = tk.StringVar()
-        self.start_date_entry = ttk.Entry(date_frame, textvariable=self.start_date_var, width=12)
+
+        self.start_date_entry = DateEntry(
+            date_frame,
+            width=12,
+            background='darkblue',
+            foreground='white',
+            borderwidth=2,
+            date_pattern='yyyy/mm/dd',  # YYYY/MM/DD形式
+            year=datetime.now(self.jst).year,
+            month=datetime.now(self.jst).month,
+            day=datetime.now(self.jst).day,
+            selectbackground='gray80',
+            selectforeground='black',
+            normalbackground='white',
+            normalforeground='black',
+            weekendbackground='lightblue',
+            weekendforeground='black',
+            othermonthbackground='gray90',
+            othermonthforeground='gray50',
+            othermonthwebackground='gray80',
+            othermonthweforeground='gray70',
+            selectmode='day',
+            cursor='hand1'
+        )
         self.start_date_entry.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(0, 10))
 
+        # 終了日カレンダー
         ttk.Label(date_frame, text="終了日").grid(row=0, column=2, sticky=tk.W, padx=(0, 5))
-        self.end_date_var = tk.StringVar()
-        self.end_date_entry = ttk.Entry(date_frame, textvariable=self.end_date_var, width=12)
+
+        self.end_date_entry = DateEntry(
+            date_frame,
+            width=12,
+            background='darkblue',
+            foreground='white',
+            borderwidth=2,
+            date_pattern='yyyy/mm/dd',  # YYYY/MM/DD形式
+            year=datetime.now(self.jst).year,
+            month=datetime.now(self.jst).month,
+            day=datetime.now(self.jst).day,
+            selectbackground='gray80',
+            selectforeground='black',
+            normalbackground='white',
+            normalforeground='black',
+            weekendbackground='lightblue',
+            weekendforeground='black',
+            othermonthbackground='gray90',
+            othermonthforeground='gray50',
+            othermonthwebackground='gray80',
+            othermonthweforeground='gray70',
+            selectmode='day',
+            cursor='hand1'
+        )
         self.end_date_entry.grid(row=0, column=3, sticky=(tk.W, tk.E))
 
-        # デフォルト日付を設定
-        today = datetime.now(self.jst).strftime("%Y/%m/%d")
-        self.start_date_var.set(today)
-        self.end_date_var.set(today)
+        # 設定から保存された日付を読み込み
+        self._load_saved_dates()
 
         # 日誌表示エリア
         text_frame = ttk.LabelFrame(main_frame, text="日誌内容", padding="5")
@@ -128,6 +196,45 @@ class CodeDiaryMainWindow:
         self.progress_label = ttk.Label(main_frame, textvariable=self.progress_var)
         self.progress_label.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 5))
 
+    def _load_saved_dates(self):
+        """設定から保存された日付を読み込む"""
+        try:
+            # 設定から日付を取得
+            saved_start = self.config.get('GIT', 'last_start_date', fallback=None)
+            saved_end = self.config.get('GIT', 'last_end_date', fallback=None)
+
+            if saved_start:
+                start_date = datetime.strptime(saved_start, '%Y-%m-%d').date()
+                self.start_date_entry.set_date(start_date)
+
+            if saved_end:
+                end_date = datetime.strptime(saved_end, '%Y-%m-%d').date()
+                self.end_date_entry.set_date(end_date)
+
+        except ValueError as e:
+            print(f"保存された日付の読み込みに失敗しました: {e}")
+            # デフォルトは今日の日付（既に設定済み）
+
+    def _save_dates(self):
+        """選択された日付を設定に保存"""
+        try:
+            start_date = self.start_date_entry.get_date()
+            end_date = self.end_date_entry.get_date()
+
+            # GITセクションが存在しない場合は作成
+            if not self.config.has_section('GIT'):
+                self.config.add_section('GIT')
+
+            # 日付を文字列形式で保存
+            self.config.set('GIT', 'last_start_date', start_date.strftime('%Y-%m-%d'))
+            self.config.set('GIT', 'last_end_date', end_date.strftime('%Y-%m-%d'))
+
+            # 設定を保存
+            save_config(self.config)
+
+        except Exception as e:
+            print(f"日付の保存に失敗しました: {e}")
+
     def _setup_bindings(self):
         # Enterキーで日誌作成
         self.root.bind('<Return>', lambda e: self._create_diary())
@@ -138,25 +245,50 @@ class CodeDiaryMainWindow:
         # Ctrl+Lでクリア
         self.root.bind('<Control-l>', lambda e: self._clear_text())
 
+        # 日付変更時に自動保存
+        self.start_date_entry.bind('<<DateEntrySelected>>', lambda e: self._save_dates())
+        self.end_date_entry.bind('<<DateEntrySelected>>', lambda e: self._save_dates())
+
     def _set_placeholder_text(self):
         self.diary_text.config(state=tk.NORMAL)
         self.diary_text.delete(1.0, tk.END)
         self.diary_text.insert(1.0, "[ここに日誌を出力]")
         self.diary_text.config(state=tk.DISABLED)
 
+    def _validate_dates(self):
+        """日付の妥当性をチェック"""
+        try:
+            start_date = self.start_date_entry.get_date()
+            end_date = self.end_date_entry.get_date()
+
+            if start_date > end_date:
+                messagebox.showerror("エラー", "開始日は終了日より前の日付を選択してください。")
+                return False
+
+            return True
+
+        except Exception as e:
+            messagebox.showerror("エラー", f"日付の取得中にエラーが発生しました: {str(e)}")
+            return False
+
     def _create_diary(self):
         try:
+            # 日付の妥当性チェック
+            if not self._validate_dates():
+                return
+
             # ボタンを無効化
             self._set_buttons_state(False)
             self.progress_var.set("日誌生成中...")
 
             # 日付の取得と変換
-            start_date = self._convert_date_format(self.start_date_var.get())
-            end_date = self._convert_date_format(self.end_date_var.get())
+            start_date = self.start_date_entry.get_date().strftime('%Y-%m-%d')
+            end_date = self.end_date_entry.get_date().strftime('%Y-%m-%d')
 
-            if not start_date or not end_date:
-                messagebox.showerror("エラー", "日付の形式が正しくありません。YYYY/MM/DD形式で入力してください。")
-                return
+            print(f"選択された期間: {start_date} から {end_date}")
+
+            # 日付を保存
+            self._save_dates()
 
             # 別スレッドで日誌生成を実行
             thread = threading.Thread(
@@ -271,6 +403,7 @@ class CodeDiaryMainWindow:
             messagebox.showerror("エラー", f"リポジトリ設定中にエラーが発生しました: {str(e)}")
 
     def _convert_date_format(self, date_str):
+        """後方互換性のための日付変換（非推奨）"""
         try:
             if not date_str.strip():
                 return None
