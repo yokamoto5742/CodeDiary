@@ -20,7 +20,7 @@ class ProgrammingDiaryGenerator:
 
     def _get_prompt_template_path(self) -> str:
         base_path = Path(__file__).parent.parent
-        return str(base_path / "utils" / "prompt_template.md")
+        return str(base_path / "prompt_template.md")
 
     def _load_prompt_template(self) -> str:
         try:
