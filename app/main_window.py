@@ -118,9 +118,6 @@ class CodeDiaryMainWindow:
         )
         self.end_date_entry.grid(row=0, column=3, sticky=(tk.W, tk.E))
 
-        # 設定から保存された日付を読み込み
-        self._load_saved_dates()
-
         # 日誌表示エリア
         text_frame = ttk.LabelFrame(main_frame, text="日誌内容", padding="5")
         text_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
@@ -196,45 +193,6 @@ class CodeDiaryMainWindow:
         self.progress_label = ttk.Label(main_frame, textvariable=self.progress_var)
         self.progress_label.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 5))
 
-    def _load_saved_dates(self):
-        """設定から保存された日付を読み込む"""
-        try:
-            # 設定から日付を取得
-            saved_start = self.config.get('GIT', 'last_start_date', fallback=None)
-            saved_end = self.config.get('GIT', 'last_end_date', fallback=None)
-
-            if saved_start:
-                start_date = datetime.strptime(saved_start, '%Y-%m-%d').date()
-                self.start_date_entry.set_date(start_date)
-
-            if saved_end:
-                end_date = datetime.strptime(saved_end, '%Y-%m-%d').date()
-                self.end_date_entry.set_date(end_date)
-
-        except ValueError as e:
-            print(f"保存された日付の読み込みに失敗しました: {e}")
-            # デフォルトは今日の日付（既に設定済み）
-
-    def _save_dates(self):
-        """選択された日付を設定に保存"""
-        try:
-            start_date = self.start_date_entry.get_date()
-            end_date = self.end_date_entry.get_date()
-
-            # GITセクションが存在しない場合は作成
-            if not self.config.has_section('GIT'):
-                self.config.add_section('GIT')
-
-            # 日付を文字列形式で保存
-            self.config.set('GIT', 'last_start_date', start_date.strftime('%Y-%m-%d'))
-            self.config.set('GIT', 'last_end_date', end_date.strftime('%Y-%m-%d'))
-
-            # 設定を保存
-            save_config(self.config)
-
-        except Exception as e:
-            print(f"日付の保存に失敗しました: {e}")
-
     def _setup_bindings(self):
         # Enterキーで日誌作成
         self.root.bind('<Return>', lambda e: self._create_diary())
@@ -244,10 +202,6 @@ class CodeDiaryMainWindow:
 
         # Ctrl+Lでクリア
         self.root.bind('<Control-l>', lambda e: self._clear_text())
-
-        # 日付変更時に自動保存
-        self.start_date_entry.bind('<<DateEntrySelected>>', lambda e: self._save_dates())
-        self.end_date_entry.bind('<<DateEntrySelected>>', lambda e: self._save_dates())
 
     def _set_placeholder_text(self):
         self.diary_text.config(state=tk.NORMAL)
@@ -286,9 +240,6 @@ class CodeDiaryMainWindow:
             end_date = self.end_date_entry.get_date().strftime('%Y-%m-%d')
 
             print(f"選択された期間: {start_date} から {end_date}")
-
-            # 日付を保存
-            self._save_dates()
 
             # 別スレッドで日誌生成を実行
             thread = threading.Thread(
