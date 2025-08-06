@@ -2,7 +2,6 @@ import json
 import os
 import sys
 import subprocess
-import argparse
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List, Dict
@@ -33,6 +32,18 @@ class GitCommitHistoryService:
         except Exception as e:
             raise Exception(f"リポジトリパスの取得に失敗しました: {e}")
 
+    def _get_subprocess_kwargs(self):
+        kwargs = {
+            'capture_output': True,
+            'text': True,
+            'encoding': 'utf-8'
+        }
+
+        if os.name == 'nt':
+            kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
+
+        return kwargs
+
     def get_commit_history(self,
                            since_date: str = None,
                            until_date: str = None,
@@ -52,14 +63,11 @@ class GitCommitHistoryService:
             cmd.append(f'--until={until_datetime}')
 
         try:
-            result = subprocess.run(
-                cmd,
-                cwd=self.repository_path,
-                capture_output=True,
-                text=True,
-                encoding='utf-8',
-                env=env
-            )
+            subprocess_kwargs = self._get_subprocess_kwargs()
+            subprocess_kwargs['env'] = env
+            subprocess_kwargs['cwd'] = self.repository_path
+
+            result = subprocess.run(cmd, **subprocess_kwargs)
 
             if result.returncode != 0:
                 raise Exception(f"Gitコマンドの実行に失敗しました: {result.stderr}")
@@ -134,30 +142,26 @@ class GitCommitHistoryService:
             env = os.environ.copy()
             env['TZ'] = 'Asia/Tokyo'
 
+            # subprocess実行時にコンソールウィンドウを表示しない設定を適用
+            subprocess_kwargs = self._get_subprocess_kwargs()
+            subprocess_kwargs['env'] = env
+            subprocess_kwargs['cwd'] = self.repository_path
+
             branch_result = subprocess.run(
                 ['git', 'branch', '--show-current'],
-                cwd=self.repository_path,
-                capture_output=True,
-                text=True,
-                env=env
+                **subprocess_kwargs
             )
             current_branch = branch_result.stdout.strip()
 
             remote_result = subprocess.run(
                 ['git', 'remote', 'get-url', 'origin'],
-                cwd=self.repository_path,
-                capture_output=True,
-                text=True,
-                env=env
+                **subprocess_kwargs
             )
             remote_url = remote_result.stdout.strip() if remote_result.returncode == 0 else "未設定"
 
             latest_commit_result = subprocess.run(
                 ['git', 'log', '-1', '--pretty=format:%H|%an|%aI'],
-                cwd=self.repository_path,
-                capture_output=True,
-                text=True,
-                env=env
+                **subprocess_kwargs
             )
 
             latest_commit_info = "情報なし"
@@ -191,12 +195,13 @@ class GitCommitHistoryService:
             env = os.environ.copy()
             env['TZ'] = 'Asia/Tokyo'
 
+            subprocess_kwargs = self._get_subprocess_kwargs()
+            subprocess_kwargs['env'] = env
+            subprocess_kwargs['cwd'] = self.repository_path
+
             result = subprocess.run(
                 ['git', 'branch', '-a'],
-                cwd=self.repository_path,
-                capture_output=True,
-                text=True,
-                env=env
+                **subprocess_kwargs
             )
 
             if result.returncode != 0:
@@ -212,58 +217,3 @@ class GitCommitHistoryService:
             return branches
         except Exception:
             return []
-
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Gitコミット履歴取得サービス",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-
-    parser.add_argument('--since', type=str, help='開始日 (YYYY-MM-DD形式)')
-    parser.add_argument('--until', type=str, help='終了日 (YYYY-MM-DD形式)')
-    parser.add_argument('--days', type=int, help='過去何日分を取得するか')
-    parser.add_argument('--author', type=str, help='作成者でフィルタ')
-    parser.add_argument('--max-count', type=int, help='最大取得件数')
-    parser.add_argument('--branch', type=str, help='対象ブランチ')
-    parser.add_argument('--format', type=str, choices=['table', 'json', 'llm_json', 'csv'], help='出力形式')
-
-    args = parser.parse_args()
-
-    try:
-        service = GitCommitHistoryService()
-
-        since_date = args.since or service.config.get('GIT', 'default_since_date', fallback=None)
-        until_date = args.until or service.config.get('GIT', 'default_until_date', fallback=None)
-
-        if args.days:
-            since_date = (datetime.now(service.jst) - timedelta(days=args.days)).strftime('%Y-%m-%d')
-            until_date = datetime.now(service.jst).strftime('%Y-%m-%d')
-
-        if not since_date and not until_date and not args.days:
-            default_days = service.config.getint('GIT', 'default_days', fallback=7)
-            since_date = (datetime.now(service.jst) - timedelta(days=default_days)).strftime('%Y-%m-%d')
-            until_date = datetime.now(service.jst).strftime('%Y-%m-%d')
-            print(f"期間が指定されていないため、過去{default_days}日間のコミット履歴を取得します")
-
-        commits = service.get_commit_history(
-            since_date=since_date,
-            until_date=until_date,
-            author=args.author,
-            max_count=args.max_count,
-            branch=args.branch
-        )
-
-        output_format = args.format or service.config.get('GIT', 'output_format', fallback='table')
-        formatted_output = service.format_output(commits, output_format)
-
-    except KeyboardInterrupt:
-        print("\n処理が中断されました。")
-        sys.exit(1)
-    except Exception as e:
-        print(f"エラー: {e}")
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
