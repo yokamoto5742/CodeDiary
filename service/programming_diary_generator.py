@@ -51,18 +51,27 @@ class ProgrammingDiaryGenerator:
         return "\n".join(formatted_commits)
 
     def _convert_markdown_to_plain_text(self, markdown_text: str) -> str:
+        patterns = [
+            (r'^#{1,6}\s*', ''),  # ヘッダー
+            (r'^\s*[-*+]\s*', ''),  # 箇条書き
+            (r'^\s*\d+\.\s*', ''),  # 番号付きリスト
+            (r'\*\*([^*]+)\*\*', r'\1'),  # 太字(**)
+            (r'\*([^*]+)\*', r'\1'),  # 斜体(*)
+            (r'__([^_]+)__', r'\1'),  # 太字(__)
+            (r'_([^_]+)_', r'\1'),  # 斜体(_)
+            (r'```[^`]*```', ''),  # コードブロック
+            (r'`([^`]+)`', r'\1'),  # インラインコード
+            (r'^[-–—]{3,}$', '---'),  # 水平線
+            (r'\n{3,}', '\n\n'),  # 連続改行
+        ]
+
         plain_text = markdown_text
-        plain_text = re.sub(r'^#{1,6}\s*', '', plain_text, flags=re.MULTILINE)
-        plain_text = re.sub(r'^\s*[-*+]\s*', '', plain_text, flags=re.MULTILINE)
-        plain_text = re.sub(r'^\s*\d+\.\s*', '', plain_text, flags=re.MULTILINE)
-        plain_text = re.sub(r'\*\*([^*]+)\*\*', r'\1', plain_text)
-        plain_text = re.sub(r'\*([^*]+)\*', r'\1', plain_text)
-        plain_text = re.sub(r'__([^_]+)__', r'\1', plain_text)
-        plain_text = re.sub(r'_([^_]+)_', r'\1', plain_text)
-        plain_text = re.sub(r'```[^`]*```', '', plain_text, flags=re.DOTALL)
-        plain_text = re.sub(r'`([^`]+)`', r'\1', plain_text)
-        plain_text = re.sub(r'^[-–—]{3,}$', '---', plain_text, flags=re.MULTILINE)
-        plain_text = re.sub(r'\n{3,}', '\n\n', plain_text)
+
+        for pattern, replacement in patterns:
+            flags = re.MULTILINE if pattern.startswith('^') else 0
+            if pattern == r'```[^`]*```':
+                flags = re.DOTALL
+            plain_text = re.sub(pattern, replacement, plain_text, flags=flags)
 
         return plain_text.strip()
 
