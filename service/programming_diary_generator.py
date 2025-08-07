@@ -79,18 +79,6 @@ class ProgrammingDiaryGenerator:
                 since_date = (datetime.now(self.jst) - timedelta(days=days)).strftime('%Y-%m-%d')
                 until_date = (datetime.now(self.jst) + timedelta(days=1)).strftime('%Y-%m-%d')
 
-            if not since_date and not until_date and not days:
-                since_date = self.config.get('GIT', 'default_since_date', fallback=None)
-                until_date = self.config.get('GIT', 'default_until_date', fallback=None)
-
-                if since_date and not until_date:
-                    until_date = (datetime.now(self.jst) + timedelta(days=1)).strftime('%Y-%m-%d')
-
-                if not since_date and not until_date:
-                    default_days = 2
-                    since_date = (datetime.now(self.jst) - timedelta(days=default_days)).strftime('%Y-%m-%d')
-                    until_date = (datetime.now(self.jst) + timedelta(days=1)).strftime('%Y-%m-%d')
-
             print(f"🔍 デバッグ情報:")
             print(f"   リポジトリパス: {self.git_service.repository_path}")
             print(f"   検索期間: {since_date} から {until_date}")
