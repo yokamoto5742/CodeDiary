@@ -1,30 +1,35 @@
 import locale
 import threading
 import tkinter as tk
-from datetime import datetime, timezone, timedelta
-from tkinter import ttk, messagebox, filedialog
-
-from tkcalendar import DateEntry
+from tkinter import messagebox, filedialog
+from tkinter import ttk
 
 from app import __version__
 from service.google_form_automation import google_form_automation
 from service.programming_diary_generator import ProgrammingDiaryGenerator
 from utils.config_manager import load_config, save_config
+from widgets import (
+    ControlButtonsWidget,
+    DateSelectionWidget,
+    DiaryContentWidget,
+    ProgressWidget
+)
 
 
 class CodeDiaryMainWindow:
+    """メインウィンドウクラス"""
+    
     def __init__(self, root):
         self.root = root
         self.config = load_config()
         self.diary_generator = ProgrammingDiaryGenerator()
 
-        self.jst = timezone(timedelta(hours=9))
         self._setup_locale()
-
         self._setup_ui()
         self._setup_bindings()
-
+        
     def _setup_locale(self):
+        """ロケール設定"""
         try:
             locale.setlocale(locale.LC_ALL, 'ja_JP.UTF-8')
         except locale.Error:
@@ -37,6 +42,8 @@ class CodeDiaryMainWindow:
                     print("警告: 日本語ロケールの設定に失敗しました。デフォルトロケールを使用します。")
 
     def _setup_ui(self):
+        """UI設定"""
+        # ウィンドウ設定
         window_width = self.config.get('WindowSettings', 'window_width', fallback='800')
         window_height = self.config.get('WindowSettings', 'window_height', fallback='600')
 
@@ -44,177 +51,78 @@ class CodeDiaryMainWindow:
         self.root.geometry(f"{window_width}x{window_height}")
         self.root.resizable(True, True)
 
+        # メインフレーム
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
-        main_frame.columnconfigure(1, weight=1)
+        main_frame.columnconfigure(0, weight=1)
         main_frame.rowconfigure(2, weight=1)
 
-        date_frame = ttk.LabelFrame(main_frame, text="対象期間", padding="5")
-        date_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
-        date_frame.columnconfigure(1, weight=1)
-        date_frame.columnconfigure(3, weight=1)
-
-        ttk.Label(date_frame, text="開始日").grid(row=0, column=0, sticky=tk.W, padx=(0, 5))
-
-        self.start_date_entry = DateEntry(
-            date_frame,
-            width=12,
-            background='darkblue',
-            foreground='white',
-            borderwidth=2,
-            date_pattern='yyyy/mm/dd',
-            year=datetime.now(self.jst).year,
-            month=datetime.now(self.jst).month,
-            day=datetime.now(self.jst).day,
-            selectbackground='gray80',
-            selectforeground='black',
-            normalbackground='white',
-            normalforeground='black',
-            weekendbackground='lightblue',
-            weekendforeground='black',
-            othermonthbackground='gray90',
-            othermonthforeground='gray50',
-            othermonthwebackground='gray80',
-            othermonthweforeground='gray70',
-            selectmode='day',
-            cursor='hand1'
+        # 日付選択ウィジェット
+        self.date_selection_widget = DateSelectionWidget(
+            main_frame, 
+            self.config
         )
-        self.start_date_entry.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(0, 10))
-
-        ttk.Label(date_frame, text="終了日").grid(row=0, column=2, sticky=tk.W, padx=(0, 5))
-
-        self.end_date_entry = DateEntry(
-            date_frame,
-            width=12,
-            background='darkblue',
-            foreground='white',
-            borderwidth=2,
-            date_pattern='yyyy/mm/dd',  # YYYY/MM/DD形式
-            year=datetime.now(self.jst).year,
-            month=datetime.now(self.jst).month,
-            day=datetime.now(self.jst).day,
-            selectbackground='gray80',
-            selectforeground='black',
-            normalbackground='white',
-            normalforeground='black',
-            weekendbackground='lightblue',
-            weekendforeground='black',
-            othermonthbackground='gray90',
-            othermonthforeground='gray50',
-            othermonthwebackground='gray80',
-            othermonthweforeground='gray70',
-            selectmode='day',
-            cursor='hand1'
+        self.date_selection_widget.grid(
+            row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 10)
         )
-        self.end_date_entry.grid(row=0, column=3, sticky=(tk.W, tk.E))
 
-        text_frame = ttk.LabelFrame(main_frame, text="日誌内容", padding="5")
-        text_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
-        text_frame.columnconfigure(0, weight=1)
-        text_frame.rowconfigure(0, weight=1)
-
-        text_container = ttk.Frame(text_frame)
-        text_container.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-        text_container.columnconfigure(0, weight=1)
-        text_container.rowconfigure(0, weight=1)
-        font_name = self.config.get('DiaryText', 'font', fallback='メイリオ')
-        font_size = self.config.getint('DiaryText', 'font_size', fallback=10)
-
-        self.diary_text = tk.Text(
-            text_container,
-            wrap=tk.WORD,
-            font=(font_name, font_size),
-            state=tk.NORMAL
+        # 進捗表示ウィジェット
+        self.progress_widget = ProgressWidget(main_frame)
+        self.progress_widget.grid(
+            row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 5)
         )
-        self.diary_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 
-        scrollbar = ttk.Scrollbar(text_container, orient=tk.VERTICAL, command=self.diary_text.yview)
-        scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
-        self.diary_text.config(yscrollcommand=scrollbar.set)
-
-        self._set_placeholder_text()
-
-        button_frame = ttk.Frame(main_frame)
-        button_frame.grid(row=3, column=0, columnspan=2, sticky=(tk.W, tk.E))
-
-        self.create_button = ttk.Button(
-            button_frame,
-            text="日誌作成",
-            command=self._create_diary
+        # 日誌内容表示ウィジェット
+        self.diary_content_widget = DiaryContentWidget(
+            main_frame, 
+            self.config
         )
-        self.create_button.grid(row=0, column=0, padx=(0, 5))
-
-        self.copy_button = ttk.Button(
-            button_frame,
-            text="コピー",
-            command=self._copy_all_text,
-            state=tk.DISABLED
+        self.diary_content_widget.grid(
+            row=2, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10)
         )
-        self.copy_button.grid(row=0, column=1, padx=(0, 5))
 
-        self.clear_button = ttk.Button(
-            button_frame,
-            text="クリア",
-            command=self._clear_text
+        # 操作ボタンウィジェット
+        self.control_buttons_widget = ControlButtonsWidget(main_frame)
+        self.control_buttons_widget.grid(
+            row=3, column=0, sticky=(tk.W, tk.E)
         )
-        self.clear_button.grid(row=0, column=2, padx=(0, 5))
 
-        self.repository_button = ttk.Button(
-            button_frame,
-            text="Gitリポジトリ設定",
-            command=self._setup_repository
+        # ボタンのコールバック設定
+        self.control_buttons_widget.set_callbacks(
+            create_diary=self._create_diary,
+            copy_text=self._copy_all_text,
+            clear_text=self._clear_text,
+            setup_repository=self._setup_repository,
+            close=self.root.quit
         )
-        self.repository_button.grid(row=0, column=3, padx=(0, 5))
-
-        self.close_button = ttk.Button(
-            button_frame,
-            text="閉じる",
-            command=self.root.quit
-        )
-        self.close_button.grid(row=0, column=4)
-
-        self.progress_var = tk.StringVar()
-        self.progress_var.set("")
-        self.progress_label = ttk.Label(main_frame, textvariable=self.progress_var)
-        self.progress_label.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 5))
 
     def _setup_bindings(self):
+        """キーバインド設定"""
         self.root.bind('<Return>', lambda e: self._create_diary())
         self.root.bind('<Control-c>', lambda e: self._copy_all_text())
         self.root.bind('<Control-l>', lambda e: self._clear_text())
 
-    def _set_placeholder_text(self):
-        self.diary_text.delete(1.0, tk.END)
-        self.diary_text.insert(1.0, "[ここに日誌を出力]")
-
     def _validate_dates(self):
-        try:
-            start_date = self.start_date_entry.get_date()
-            end_date = self.end_date_entry.get_date()
-
-            if start_date > end_date:
-                messagebox.showerror("エラー", "終了日より前の日付を選択してください。")
-                return False
-
-            return True
-
-        except Exception as e:
-            messagebox.showerror("エラー", f"日付の取得中にエラーが発生しました: {str(e)}")
-            return False
+        """日付の妥当性を検証"""
+        is_valid, error_message = self.date_selection_widget.validate_dates()
+        if not is_valid:
+            messagebox.showerror("エラー", error_message)
+        return is_valid
 
     def _create_diary(self):
+        """日誌作成処理"""
         try:
             if not self._validate_dates():
                 return
 
             self._set_buttons_state(False)
-            self.progress_var.set("日誌生成中...")
+            self.progress_widget.set_processing_message()
 
-            start_date = self.start_date_entry.get_date().strftime('%Y-%m-%d')
-            end_date = self.end_date_entry.get_date().strftime('%Y-%m-%d')
+            start_date = self.date_selection_widget.get_start_date().strftime('%Y-%m-%d')
+            end_date = self.date_selection_widget.get_end_date().strftime('%Y-%m-%d')
 
             thread = threading.Thread(
                 target=self._generate_diary_thread,
@@ -226,9 +134,10 @@ class CodeDiaryMainWindow:
         except Exception as e:
             messagebox.showerror("エラー", f"日誌作成中にエラーが発生しました: {str(e)}")
             self._set_buttons_state(True)
-            self.progress_var.set("")
+            self.progress_widget.clear_message()
 
     def _generate_diary_thread(self, start_date, end_date):
+        """日誌生成スレッド処理"""
         try:
             diary_content, input_tokens, output_tokens = self.diary_generator.generate_diary(
                 since_date=start_date,
@@ -241,44 +150,45 @@ class CodeDiaryMainWindow:
             self.root.after(0, self._display_error, str(e))
 
     def _display_diary_result(self, diary_content, input_tokens, output_tokens):
+        """日誌生成結果の表示"""
         try:
-            self.diary_text.delete(1.0, tk.END)
-            self.diary_text.insert(1.0, diary_content)
+            self.diary_content_widget.set_content(diary_content)
 
             self.root.clipboard_clear()
             self.root.clipboard_append(diary_content)
 
-            total_tokens = input_tokens + output_tokens
-            self.progress_var.set(
-                f"日誌生成完了 (文字数: 入力={input_tokens}, 出力={output_tokens}, 合計={total_tokens})")
+            self.progress_widget.set_completion_message(input_tokens, output_tokens)
 
             self._set_buttons_state(True)
-            self.copy_button.config(state=tk.NORMAL)
+            self.control_buttons_widget.set_copy_button_state(True)
             self._execute_google_form_automation()
 
         except Exception as e:
             self._display_error(f"結果表示エラー: {str(e)}")
 
     def _execute_google_form_automation(self):
+        """Google Form自動入力の実行"""
         def run_google_form():
             try:
                 google_form_automation()
             except Exception as e:
-                self.root.after(0, lambda: self.progress_var.set(f"Google Form入力エラー: {str(e)}"))
+                self.root.after(0, lambda: self.progress_widget.set_error_message(str(e)))
 
         thread = threading.Thread(target=run_google_form)
         thread.daemon = True
         thread.start()
 
     def _display_error(self, error_message):
+        """エラー表示"""
         messagebox.showerror("エラー", error_message)
         self._set_buttons_state(True)
-        self.progress_var.set("")
+        self.progress_widget.clear_message()
 
     def _copy_all_text(self):
+        """テキスト全体をコピー"""
         try:
-            content = self.diary_text.get(1.0, tk.END).strip()
-            if content and content != "[ここに日誌を出力]":
+            if self.diary_content_widget.has_content():
+                content = self.diary_content_widget.get_content()
                 self.root.clipboard_clear()
                 self.root.clipboard_append(content)
                 messagebox.showinfo("コピー完了", "クリップボードにコピーしました。")
@@ -288,11 +198,13 @@ class CodeDiaryMainWindow:
             messagebox.showerror("エラー", f"コピー中にエラーが発生しました: {str(e)}")
 
     def _clear_text(self):
-        self._set_placeholder_text()
-        self.copy_button.config(state=tk.DISABLED)
-        self.progress_var.set("")
+        """テキストクリア"""
+        self.diary_content_widget.clear_content()
+        self.control_buttons_widget.set_copy_button_state(False)
+        self.progress_widget.clear_message()
 
     def _setup_repository(self):
+        """リポジトリ設定"""
         try:
             current_path = self.config.get('GIT', 'repository_path', fallback='')
             new_path = filedialog.askdirectory(
@@ -306,7 +218,6 @@ class CodeDiaryMainWindow:
                 self.config.set('GIT', 'repository_path', new_path)
 
                 save_config(self.config)
-
                 self.diary_generator = ProgrammingDiaryGenerator()
 
                 messagebox.showinfo("設定完了", f"リポジトリパスを更新しました:\n{new_path}")
@@ -315,8 +226,5 @@ class CodeDiaryMainWindow:
             messagebox.showerror("エラー", f"リポジトリ設定中にエラーが発生しました: {str(e)}")
 
     def _set_buttons_state(self, enabled):
-        state = tk.NORMAL if enabled else tk.DISABLED
-        self.create_button.config(state=state)
-        self.clear_button.config(state=state)
-        self.repository_button.config(state=state)
-        self.close_button.config(state=state)
+        """ボタン状態設定"""
+        self.control_buttons_widget.set_buttons_state(enabled)
