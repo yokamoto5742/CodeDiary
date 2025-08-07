@@ -3,9 +3,13 @@ from datetime import datetime, timedelta, timezone
 import pyperclip
 from playwright.sync_api import sync_playwright, expect
 
+from utils.config_manager import load_config
+
 
 def google_form_automation():
-    form_url = "https://forms.gle/cEnjC4A7rFdMs6dD6"
+    config = load_config()
+    form_url = config.get('URL', 'form_url', fallback=None)
+
     jst = timezone(timedelta(hours=9))
     today_date_str = datetime.now(jst).strftime("%Y-%m-%d")
 
@@ -59,6 +63,7 @@ def google_form_automation():
         except Exception as e:
             print(f"エラーが発生しました: {e}")
             page.wait_for_event('close')
+
 
 if __name__ == "__main__":
     google_form_automation()

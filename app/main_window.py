@@ -37,8 +37,11 @@ class CodeDiaryMainWindow:
                     print("警告: 日本語ロケールの設定に失敗しました。デフォルトロケールを使用します。")
 
     def _setup_ui(self):
+        window_width = self.config.get('WindowSettings', 'window_width', fallback='800')
+        window_height = self.config.get('WindowSettings', 'window_height', fallback='600')
+
         self.root.title(f"CodeDiary v{__version__}")
-        self.root.geometry("800x600")
+        self.root.geometry(f"{window_width}x{window_height}")
         self.root.resizable(True, True)
 
         main_frame = ttk.Frame(self.root, padding="10")
@@ -117,11 +120,13 @@ class CodeDiaryMainWindow:
         text_container.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         text_container.columnconfigure(0, weight=1)
         text_container.rowconfigure(0, weight=1)
+        font_name = self.config.get('DiaryText', 'font', fallback='メイリオ')
+        font_size = self.config.getint('DiaryText', 'font_size', fallback=12)
 
         self.diary_text = tk.Text(
             text_container,
             wrap=tk.WORD,
-            font=("メイリオ", 10),
+            font=(font_name, font_size),
             state=tk.DISABLED
         )
         self.diary_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
