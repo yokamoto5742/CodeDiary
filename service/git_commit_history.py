@@ -1,7 +1,6 @@
-import json
 import os
-import sys
 import subprocess
+import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List, Dict
@@ -83,7 +82,6 @@ class GitCommitHistoryService:
                             dt_jst = dt_utc.astimezone(self.jst)
                             timestamp_jst = dt_jst.isoformat()
                         except ValueError:
-                            # 変換に失敗した場合は元のタイムスタンプを使用
                             timestamp_jst = timestamp_utc
 
                         commits.append({
@@ -104,18 +102,6 @@ class GitCommitHistoryService:
     def format_output(self, commits: List[Dict], output_format: str = 'table') -> str:
         if not commits:
             return "コミット履歴が見つかりませんでした。"
-
-        if output_format == 'json':
-            simplified_commits = []
-            for commit in commits:
-                simplified_commits.append({
-                    'timestamp': commit['timestamp'],
-                    'message': commit['message']
-                })
-            return json.dumps(simplified_commits, ensure_ascii=False, indent=2)
-
-        elif output_format == 'llm_json':
-            return json.dumps(commits, ensure_ascii=False, indent=2)
 
         output = []
         output.append("=" * 100)
@@ -142,7 +128,6 @@ class GitCommitHistoryService:
             env = os.environ.copy()
             env['TZ'] = 'Asia/Tokyo'
 
-            # subprocess実行時にコンソールウィンドウを表示しない設定を適用
             subprocess_kwargs = self._get_subprocess_kwargs()
             subprocess_kwargs['env'] = env
             subprocess_kwargs['cwd'] = self.repository_path
