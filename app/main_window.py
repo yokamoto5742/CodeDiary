@@ -19,28 +19,21 @@ class CodeDiaryMainWindow:
         self.diary_generator = ProgrammingDiaryGenerator()
 
         self.jst = timezone(timedelta(hours=9))
-
-        # ロケールの設定（日本語対応）
         self._setup_locale()
 
         self._setup_ui()
         self._setup_bindings()
 
     def _setup_locale(self):
-        """日本語ロケールの設定"""
         try:
-            # 日本語ロケールを試行
             locale.setlocale(locale.LC_ALL, 'ja_JP.UTF-8')
         except locale.Error:
             try:
-                # Windows用の日本語ロケール
                 locale.setlocale(locale.LC_ALL, 'Japanese_Japan.932')
             except locale.Error:
                 try:
-                    # 別のWindows日本語ロケール
                     locale.setlocale(locale.LC_ALL, 'ja')
                 except locale.Error:
-                    # フォールバック：デフォルトロケール
                     print("警告: 日本語ロケールの設定に失敗しました。デフォルトロケールを使用します。")
 
     def _setup_ui(self):
@@ -56,13 +49,11 @@ class CodeDiaryMainWindow:
         main_frame.columnconfigure(1, weight=1)
         main_frame.rowconfigure(2, weight=1)
 
-        # 日付選択フレーム
-        date_frame = ttk.LabelFrame(main_frame, text="期間設定", padding="5")
+        date_frame = ttk.LabelFrame(main_frame, text="対象期間", padding="5")
         date_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
         date_frame.columnconfigure(1, weight=1)
         date_frame.columnconfigure(3, weight=1)
 
-        # 開始日カレンダー
         ttk.Label(date_frame, text="開始日").grid(row=0, column=0, sticky=tk.W, padx=(0, 5))
 
         self.start_date_entry = DateEntry(
@@ -71,7 +62,7 @@ class CodeDiaryMainWindow:
             background='darkblue',
             foreground='white',
             borderwidth=2,
-            date_pattern='yyyy/mm/dd',  # YYYY/MM/DD形式
+            date_pattern='yyyy/mm/dd',
             year=datetime.now(self.jst).year,
             month=datetime.now(self.jst).month,
             day=datetime.now(self.jst).day,
@@ -90,7 +81,6 @@ class CodeDiaryMainWindow:
         )
         self.start_date_entry.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(0, 10))
 
-        # 終了日カレンダー
         ttk.Label(date_frame, text="終了日").grid(row=0, column=2, sticky=tk.W, padx=(0, 5))
 
         self.end_date_entry = DateEntry(
@@ -118,13 +108,11 @@ class CodeDiaryMainWindow:
         )
         self.end_date_entry.grid(row=0, column=3, sticky=(tk.W, tk.E))
 
-        # 日誌表示エリア
-        text_frame = ttk.LabelFrame(main_frame, text="日誌内容", padding="5")
+        text_frame = ttk.LabelFrame(main_frame, text="内容", padding="5")
         text_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
         text_frame.columnconfigure(0, weight=1)
         text_frame.rowconfigure(0, weight=1)
 
-        # テキストエリアとスクロールバー
         text_container = ttk.Frame(text_frame)
         text_container.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         text_container.columnconfigure(0, weight=1)
@@ -138,19 +126,15 @@ class CodeDiaryMainWindow:
         )
         self.diary_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 
-        # スクロールバー
         scrollbar = ttk.Scrollbar(text_container, orient=tk.VERTICAL, command=self.diary_text.yview)
         scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
         self.diary_text.config(yscrollcommand=scrollbar.set)
 
-        # プレースホルダーテキストを設定
         self._set_placeholder_text()
 
-        # ボタンフレーム
         button_frame = ttk.Frame(main_frame)
         button_frame.grid(row=3, column=0, columnspan=2, sticky=(tk.W, tk.E))
 
-        # ボタンの作成
         self.create_button = ttk.Button(
             button_frame,
             text="日誌作成",
@@ -160,7 +144,7 @@ class CodeDiaryMainWindow:
 
         self.copy_button = ttk.Button(
             button_frame,
-            text="全文コピー",
+            text="コピー",
             command=self._copy_all_text,
             state=tk.DISABLED
         )
@@ -175,7 +159,7 @@ class CodeDiaryMainWindow:
 
         self.repository_button = ttk.Button(
             button_frame,
-            text="リポジトリ設定",
+            text="Gitリポジトリ設定",
             command=self._setup_repository
         )
         self.repository_button.grid(row=0, column=3, padx=(0, 5))
@@ -187,20 +171,14 @@ class CodeDiaryMainWindow:
         )
         self.close_button.grid(row=0, column=4)
 
-        # プログレスバー（非表示で初期化）
         self.progress_var = tk.StringVar()
         self.progress_var.set("")
         self.progress_label = ttk.Label(main_frame, textvariable=self.progress_var)
         self.progress_label.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 5))
 
     def _setup_bindings(self):
-        # Enterキーで日誌作成
         self.root.bind('<Return>', lambda e: self._create_diary())
-
-        # Ctrl+Cで全文コピー
         self.root.bind('<Control-c>', lambda e: self._copy_all_text())
-
-        # Ctrl+Lでクリア
         self.root.bind('<Control-l>', lambda e: self._clear_text())
 
     def _set_placeholder_text(self):
@@ -210,13 +188,12 @@ class CodeDiaryMainWindow:
         self.diary_text.config(state=tk.DISABLED)
 
     def _validate_dates(self):
-        """日付の妥当性をチェック"""
         try:
             start_date = self.start_date_entry.get_date()
             end_date = self.end_date_entry.get_date()
 
             if start_date > end_date:
-                messagebox.showerror("エラー", "開始日は終了日より前の日付を選択してください。")
+                messagebox.showerror("エラー", "終了日より前の日付を選択してください。")
                 return False
 
             return True
@@ -227,21 +204,15 @@ class CodeDiaryMainWindow:
 
     def _create_diary(self):
         try:
-            # 日付の妥当性チェック
             if not self._validate_dates():
                 return
 
-            # ボタンを無効化
             self._set_buttons_state(False)
             self.progress_var.set("日誌生成中...")
 
-            # 日付の取得と変換
             start_date = self.start_date_entry.get_date().strftime('%Y-%m-%d')
             end_date = self.end_date_entry.get_date().strftime('%Y-%m-%d')
 
-            print(f"選択された期間: {start_date} から {end_date}")
-
-            # 別スレッドで日誌生成を実行
             thread = threading.Thread(
                 target=self._generate_diary_thread,
                 args=(start_date, end_date)
@@ -256,22 +227,18 @@ class CodeDiaryMainWindow:
 
     def _generate_diary_thread(self, start_date, end_date):
         try:
-            # 日誌を生成
             diary_content, input_tokens, output_tokens = self.diary_generator.generate_diary(
                 since_date=start_date,
                 until_date=end_date
             )
 
-            # UIスレッドで結果を表示
             self.root.after(0, self._display_diary_result, diary_content, input_tokens, output_tokens)
 
         except Exception as e:
-            # UIスレッドでエラーを表示
             self.root.after(0, self._display_error, str(e))
 
     def _display_diary_result(self, diary_content, input_tokens, output_tokens):
         try:
-            # テキストエリアに結果を表示
             self.diary_text.config(state=tk.NORMAL)
             self.diary_text.delete(1.0, tk.END)
             self.diary_text.insert(1.0, diary_content)
@@ -280,12 +247,10 @@ class CodeDiaryMainWindow:
             self.root.clipboard_clear()
             self.root.clipboard_append(diary_content)
 
-            # ステータス更新
             total_tokens = input_tokens + output_tokens
             self.progress_var.set(
-                f"日誌生成完了 (使用トークン: 入力={input_tokens}, 出力={output_tokens}, 合計={total_tokens})")
+                f"日誌生成完了 (文字数: 入力={input_tokens}, 出力={output_tokens}, 合計={total_tokens})")
 
-            # ボタンの状態を復元
             self._set_buttons_state(True)
             self.copy_button.config(state=tk.NORMAL)
             self._execute_google_form_automation()
@@ -315,7 +280,7 @@ class CodeDiaryMainWindow:
             if content and content != "[ここに日誌を出力]":
                 self.root.clipboard_clear()
                 self.root.clipboard_append(content)
-                messagebox.showinfo("コピー完了", "全文をクリップボードにコピーしました。")
+                messagebox.showinfo("コピー完了", "クリップボードにコピーしました。")
             else:
                 messagebox.showwarning("警告", "コピーする内容がありません。")
         except Exception as e:
@@ -329,45 +294,24 @@ class CodeDiaryMainWindow:
     def _setup_repository(self):
         try:
             current_path = self.config.get('GIT', 'repository_path', fallback='')
-
-            # フォルダ選択ダイアログ
             new_path = filedialog.askdirectory(
                 title="Gitリポジトリフォルダを選択",
                 initialdir=current_path if current_path else "."
             )
 
             if new_path:
-                # 設定を更新
                 if not self.config.has_section('GIT'):
                     self.config.add_section('GIT')
                 self.config.set('GIT', 'repository_path', new_path)
 
-                # 設定を保存
                 save_config(self.config)
 
-                # 日誌ジェネレーターも更新
                 self.diary_generator = ProgrammingDiaryGenerator()
 
                 messagebox.showinfo("設定完了", f"リポジトリパスを更新しました:\n{new_path}")
 
         except Exception as e:
             messagebox.showerror("エラー", f"リポジトリ設定中にエラーが発生しました: {str(e)}")
-
-    def _convert_date_format(self, date_str):
-        """後方互換性のための日付変換（非推奨）"""
-        try:
-            if not date_str.strip():
-                return None
-
-            # スラッシュをハイフンに変換
-            date_str = date_str.replace('/', '-')
-
-            # 日付の妥当性をチェック
-            datetime.strptime(date_str, '%Y-%m-%d')
-
-            return date_str
-        except ValueError:
-            return None
 
     def _set_buttons_state(self, enabled):
         state = tk.NORMAL if enabled else tk.DISABLED
