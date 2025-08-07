@@ -127,7 +127,7 @@ class CodeDiaryMainWindow:
             text_container,
             wrap=tk.WORD,
             font=(font_name, font_size),
-            state=tk.DISABLED
+            state=tk.NORMAL
         )
         self.diary_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 
@@ -187,10 +187,8 @@ class CodeDiaryMainWindow:
         self.root.bind('<Control-l>', lambda e: self._clear_text())
 
     def _set_placeholder_text(self):
-        self.diary_text.config(state=tk.NORMAL)
         self.diary_text.delete(1.0, tk.END)
         self.diary_text.insert(1.0, "[ここに日誌を出力]")
-        self.diary_text.config(state=tk.DISABLED)
 
     def _validate_dates(self):
         try:
@@ -244,10 +242,8 @@ class CodeDiaryMainWindow:
 
     def _display_diary_result(self, diary_content, input_tokens, output_tokens):
         try:
-            self.diary_text.config(state=tk.NORMAL)
             self.diary_text.delete(1.0, tk.END)
             self.diary_text.insert(1.0, diary_content)
-            self.diary_text.config(state=tk.DISABLED)
 
             self.root.clipboard_clear()
             self.root.clipboard_append(diary_content)
