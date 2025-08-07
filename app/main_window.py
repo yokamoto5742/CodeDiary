@@ -111,7 +111,7 @@ class CodeDiaryMainWindow:
         )
         self.end_date_entry.grid(row=0, column=3, sticky=(tk.W, tk.E))
 
-        text_frame = ttk.LabelFrame(main_frame, text="内容", padding="5")
+        text_frame = ttk.LabelFrame(main_frame, text="日誌内容", padding="5")
         text_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
         text_frame.columnconfigure(0, weight=1)
         text_frame.rowconfigure(0, weight=1)
@@ -121,7 +121,7 @@ class CodeDiaryMainWindow:
         text_container.columnconfigure(0, weight=1)
         text_container.rowconfigure(0, weight=1)
         font_name = self.config.get('DiaryText', 'font', fallback='メイリオ')
-        font_size = self.config.getint('DiaryText', 'font_size', fallback=12)
+        font_size = self.config.getint('DiaryText', 'font_size', fallback=10)
 
         self.diary_text = tk.Text(
             text_container,
