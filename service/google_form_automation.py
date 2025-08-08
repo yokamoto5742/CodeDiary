@@ -15,7 +15,9 @@ def google_form_automation():
 
     try:
         clipboard_text = pyperclip.paste()
-        if not clipboard_text.strip():
+        # Noneチェックを先に実行
+        if clipboard_text is None or not clipboard_text.strip():
+            print("警告: クリップボードが空です")
             return
     except Exception as e:
         print(f"エラー: クリップボードにアクセスできませんでした: {e}")
@@ -36,6 +38,7 @@ def google_form_automation():
             date_input = page.locator('input[type="date"]')
             expect(date_input).to_be_visible(timeout=10000)
             date_input.fill(today_date_str)
+
             content_selectors = [
                 'textarea[aria-label="作業内容"]',
                 'textarea[aria-label*="回答を入力"]',
@@ -58,6 +61,7 @@ def google_form_automation():
                 print("警告: 作業内容フィールドが見つかりませんでした。")
 
             print("=== 自動入力が完了しました ===")
+            input("Enterキーを押してください")
             page.wait_for_event('close')
 
         except Exception as e:
