@@ -61,7 +61,6 @@ def google_form_automation():
                 print("警告: 作業内容フィールドが見つかりませんでした。")
 
             print("=== 自動入力が完了しました ===")
-            input("Enterキーを押してください")
             page.wait_for_event('close')
 
         except Exception as e:
