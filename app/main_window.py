@@ -167,10 +167,10 @@ class CodeDiaryMainWindow:
             self._display_error(f"結果表示エラー: {str(e)}")
 
     def _execute_GoogleFormAutomation(self):
-        """Google Form自動入力の実行"""
         def run_google_form():
             try:
-                GoogleFormAutomation()
+                automation = GoogleFormAutomation()
+                automation.run_automation()
             except Exception as e:
                 self.root.after(0, lambda: self.progress_widget.set_error_message(str(e)))
 
