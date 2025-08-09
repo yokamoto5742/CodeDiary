@@ -5,7 +5,7 @@ from tkinter import messagebox, filedialog
 from tkinter import ttk
 
 from app import __version__
-from service.google_form_automation import google_form_automation
+from service.google_form_automation import GoogleFormAutomation
 from service.programming_diary_generator import ProgrammingDiaryGenerator
 from utils.config_manager import load_config, save_config
 from widgets import (
@@ -161,16 +161,16 @@ class CodeDiaryMainWindow:
 
             self._set_buttons_state(True)
             self.control_buttons_widget.set_copy_button_state(True)
-            self._execute_google_form_automation()
+            self._execute_GoogleFormAutomation()
 
         except Exception as e:
             self._display_error(f"結果表示エラー: {str(e)}")
 
-    def _execute_google_form_automation(self):
+    def _execute_GoogleFormAutomation(self):
         """Google Form自動入力の実行"""
         def run_google_form():
             try:
-                google_form_automation()
+                GoogleFormAutomation()
             except Exception as e:
                 self.root.after(0, lambda: self.progress_widget.set_error_message(str(e)))
 

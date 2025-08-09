@@ -7,7 +7,7 @@ from playwright.sync_api import sync_playwright, expect
 from utils.config_manager import load_config
 
 
-class ChromeGoogleFormAutomation:
+class GoogleFormAutomation:
     def __init__(self):
         self.config = load_config()
         self.jst = timezone(timedelta(hours=9))
@@ -115,5 +115,5 @@ class ChromeGoogleFormAutomation:
 
 
 if __name__ == "__main__":
-    automation = ChromeGoogleFormAutomation()
+    automation = GoogleFormAutomation()
     automation.run_automation()
