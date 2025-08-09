@@ -26,10 +26,10 @@ class OpenAIAPIClient(BaseAPIClient):
         response = self.client.chat.completions.create(
             model=model_name,
             messages=[
-                {"role": "system", "content": "あなたは経験豊富な医療文書作成の専門家です。"},
+                {"role": "system", "content": "あなたは経験豊富なソフトウェア開発者です。"},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=6000,
+            max_completion_tokens=5000,
         )
 
         if response.choices and response.choices[0].message.content:
