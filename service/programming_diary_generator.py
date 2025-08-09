@@ -7,6 +7,7 @@ from external_service.api_factory import APIFactory
 from service.git_commit_history import GitCommitHistoryService
 from utils.config_manager import get_active_provider, get_provider_credentials, load_config,get_ai_provider_config, get_available_providers
 from utils.env_loader import load_environment_variables
+from utils.repository_name_extractor import get_repository_directory_name
 
 
 class ProgrammingDiaryGenerator:
@@ -159,7 +160,13 @@ class ProgrammingDiaryGenerator:
 
             plain_diary = self._convert_markdown_to_plain_text(diary_content)
 
-            return plain_diary, input_tokens, output_tokens
+            try:
+                project_name = get_repository_directory_name()
+                project_diary = f"{project_name}\n{plain_diary}"
+            except Exception as e:
+                print(f"プロジェクト名の取得に失敗しました: {e}")
+
+            return project_diary, input_tokens, output_tokens
 
         except Exception as e:
             return self._try_fallback_provider(
