@@ -18,7 +18,7 @@ from widgets import (
 
 class CodeDiaryMainWindow:
     """メインウィンドウクラス"""
-    
+
     def __init__(self, root):
         self.root = root
         self.config = load_config()
@@ -27,7 +27,7 @@ class CodeDiaryMainWindow:
         self._setup_locale()
         self._setup_ui()
         self._setup_bindings()
-        
+
     def _setup_locale(self):
         """ロケール設定"""
         try:
@@ -62,7 +62,7 @@ class CodeDiaryMainWindow:
 
         # 日付選択ウィジェット
         self.date_selection_widget = DateSelectionWidget(
-            main_frame, 
+            main_frame,
             self.config
         )
         self.date_selection_widget.grid(
@@ -77,7 +77,7 @@ class CodeDiaryMainWindow:
 
         # 日誌内容表示ウィジェット
         self.diary_content_widget = DiaryContentWidget(
-            main_frame, 
+            main_frame,
             self.config
         )
         self.diary_content_widget.grid(
@@ -154,6 +154,7 @@ class CodeDiaryMainWindow:
         try:
             self.diary_content_widget.set_content(diary_content)
 
+            # クリップボードに内容をコピー
             self.root.clipboard_clear()
             self.root.clipboard_append(diary_content)
 
@@ -161,18 +162,24 @@ class CodeDiaryMainWindow:
 
             self._set_buttons_state(True)
             self.control_buttons_widget.set_copy_button_state(True)
+
+            # Google Form自動化を実行（クリップボードにコンテンツがある状態で）
             self._execute_GoogleFormAutomation()
 
         except Exception as e:
             self._display_error(f"結果表示エラー: {str(e)}")
 
     def _execute_GoogleFormAutomation(self):
+        """Google Form自動化実行"""
+
         def run_google_form():
             try:
                 automation = GoogleFormAutomation()
                 automation.run_automation()
             except Exception as e:
-                self.root.after(0, lambda: self.progress_widget.set_error_message(str(e)))
+                # スコープ問題を解決: エラーメッセージを直接キャプチャ
+                error_msg = str(e)
+                self.root.after(0, lambda msg=error_msg: self.progress_widget.set_error_message(msg))
 
         thread = threading.Thread(target=run_google_form)
         thread.daemon = True
