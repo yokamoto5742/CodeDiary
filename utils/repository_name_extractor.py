@@ -13,11 +13,3 @@ def get_repository_directory_name() -> str:
         
     except Exception as e:
         raise Exception(f"プロジェクト名の取得に失敗しました: {e}")
-
-if __name__ == "__main__":
-    try:
-        directory_name = get_repository_directory_name()
-        print(f"プロジェクト名: {directory_name}")
-        
-    except Exception as e:
-        print(f"実行エラー: {e}")
