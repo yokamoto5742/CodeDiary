@@ -3,9 +3,9 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 
-from external_service.claude_api import ClaudeAPIClient
+from external_service.api_factory import APIFactory
 from service.git_commit_history import GitCommitHistoryService
-from utils.config_manager import load_config
+from utils.config_manager import get_active_provider, get_provider_credentials, load_config,get_ai_provider_config, get_available_providers
 from utils.env_loader import load_environment_variables
 
 
@@ -14,13 +14,34 @@ class ProgrammingDiaryGenerator:
         load_environment_variables()
         self.config = load_config()
         self.git_service = GitCommitHistoryService()
-        self.claude_client = ClaudeAPIClient()
+        self.ai_provider = None
+        self.ai_client = None
         self.prompt_template_path = self._get_prompt_template_path()
         self.jst = timezone(timedelta(hours=9))
+        self._initialize_ai_provider()
 
     def _get_prompt_template_path(self) -> str:
         base_path = Path(__file__).parent.parent
         return str(base_path / "prompt_template.md")
+
+    def _initialize_ai_provider(self):
+        try:
+            self.ai_provider = get_active_provider()
+            print(f"使用するAIプロバイダー: {self.ai_provider}")
+
+            self.ai_client = APIFactory.create_client(self.ai_provider)
+
+            credentials = get_provider_credentials(self.ai_provider)
+            if credentials:
+                self.default_model = credentials.get('model', self.ai_client.default_model)
+            else:
+                self.default_model = self.ai_client.default_model
+
+            print(f"使用するモデル: {self.default_model}")
+
+        except Exception as e:
+            print(f"AIプロバイダーの初期化でエラーが発生しました: {e}")
+            raise
 
     def _load_prompt_template(self) -> str:
         try:
@@ -82,13 +103,15 @@ class ProgrammingDiaryGenerator:
                        author: Optional[str] = None,
                        max_count: Optional[int] = None) -> Tuple[str, int, int]:
         try:
-            self.claude_client.initialize()
+            self.ai_client.initialize()
 
             if days:
                 since_date = (datetime.now(self.jst) - timedelta(days=days)).strftime('%Y-%m-%d')
                 until_date = (datetime.now(self.jst) + timedelta(days=1)).strftime('%Y-%m-%d')
 
             print(f"🔍 デバッグ情報:")
+            print(f"   AIプロバイダー: {self.ai_provider}")
+            print(f"   使用モデル: {self.default_model}")
             print(f"   リポジトリパス: {self.git_service.repository_path}")
             print(f"   検索期間: {since_date} から {until_date}")
             print(f"   作成者フィルタ: {author or '全て'}")
@@ -126,14 +149,12 @@ class ProgrammingDiaryGenerator:
                 return "指定期間にコミット履歴が見つかりませんでした。", 0, 0
 
             prompt_template = self._load_prompt_template()
-
             formatted_commits = self._format_commits_for_prompt(commits)
-
             full_prompt = f"{prompt_template}\n\n## Git コミット履歴\n\n{formatted_commits}"
 
-            diary_content, input_tokens, output_tokens = self.claude_client._generate_content(
+            diary_content, input_tokens, output_tokens = self.ai_client._generate_content(
                 prompt=full_prompt,
-                model_name=self.claude_client.default_model
+                model_name=self.default_model
             )
 
             plain_diary = self._convert_markdown_to_plain_text(diary_content)
@@ -141,4 +162,30 @@ class ProgrammingDiaryGenerator:
             return plain_diary, input_tokens, output_tokens
 
         except Exception as e:
-            raise Exception(f"プログラミング日誌の生成に失敗しました: {e}")
+            return self._try_fallback_provider(
+                since_date, until_date, days, author, max_count, str(e)
+            )
+
+    def _try_fallback_provider(self, since_date, until_date, days, author, max_count, original_error):
+        try:
+            config = get_ai_provider_config()
+            available_providers = get_available_providers()
+            fallback_provider = config.get('fallback_provider')
+
+            if fallback_provider and available_providers.get(fallback_provider, False):
+                print(
+                    f"⚠️ メインプロバイダーでエラーが発生しました。フォールバックプロバイダー '{fallback_provider}' を試行します...")
+
+                self.ai_provider = fallback_provider
+                self.ai_client = APIFactory.create_client(fallback_provider)
+                credentials = get_provider_credentials(fallback_provider)
+                if credentials:
+                    self.default_model = credentials.get('model', self.ai_client.default_model)
+
+                return self.generate_diary(since_date, until_date, days, author, max_count)
+            else:
+                raise Exception(f"プロバイダーエラー (フォールバック不可): {original_error}")
+
+        except Exception as fallback_error:
+            raise Exception(
+                f"プログラミング日誌の生成に失敗しました。\n元のエラー: {original_error}\nフォールバックエラー: {fallback_error}")
