@@ -11,7 +11,20 @@ class GoogleFormAutomation:
     def __init__(self):
         self.config = load_config()
         self.jst = timezone(timedelta(hours=9))
-        self.chrome_path = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+        self.chrome_path = self._get_chrome_path()
+
+    def _get_chrome_path(self) -> str:
+        try:
+            chrome_path = self.config.get('Chrome', 'chrome_path', fallback=None)
+            return chrome_path
+        except Exception as e:
+            print(f"Chrome設定の取得に失敗しました: {e}")
+            raise Exception("設定ファイルにchrome_pathが設定されていません")
+
+    def _check_chrome_path(self) -> bool:
+        if not os.path.exists(self.chrome_path):
+            raise Exception(f"Chrome実行ファイルが見つかりません: {self.chrome_path}")
+        return True
 
     def _get_form_url(self) -> str:
         form_url = self.config.get('URL', 'form_url', fallback=None)
@@ -28,11 +41,6 @@ class GoogleFormAutomation:
         except Exception as e:
             raise Exception(f"クリップボードにアクセスできませんでした: {e}")
 
-    def _check_chrome_path(self) -> bool:
-        if not os.path.exists(self.chrome_path):
-            raise Exception(f"Chrome実行ファイルが見つかりません: {self.chrome_path}")
-        return True
-
     def _get_today_date_string(self) -> str:
         return datetime.now(self.jst).strftime("%Y-%m-%d")
 
@@ -43,6 +51,7 @@ class GoogleFormAutomation:
             clipboard_content = self._get_clipboard_content()
             today_date = self._get_today_date_string()
 
+            print(f"Chrome実行ファイル: {self.chrome_path}")
             print(f"作成日: {today_date}")
             print(f"作業内容: {clipboard_content[:50]}...")
 
