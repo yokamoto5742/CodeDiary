@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from typing import Tuple, Optional
 
 from utils.config_manager import load_config
-from utils.constants import DEFAULT_DOCUMENT_TYPE
 from utils.exceptions import APIError
 
 
@@ -41,7 +40,6 @@ class BaseAPIClient(ABC):
                               referral_purpose: str = "",
                               current_prescription: str = "",
                               department: str = "default",
-                              document_type: str = DEFAULT_DOCUMENT_TYPE,
                               doctor: str = "default") -> str:
         prompt_data = get_prompt(department, document_type, doctor)
 
@@ -78,7 +76,6 @@ class BaseAPIClient(ABC):
                          referral_purpose: str = "",
                          current_prescription: str = "",
                          department: str = "default",
-                         document_type: str = DEFAULT_DOCUMENT_TYPE,
                          doctor: str = "default",
                          model_name: Optional[str] = None) -> Tuple[str, int, int]:
         try:

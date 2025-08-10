@@ -1,5 +1,3 @@
-DEFAULT_DOCUMENT_TYPE = "プログラミング日誌"
-
 MESSAGES = {
     "PROMPT_UPDATED": "プロンプトを更新しました",
     "PROMPT_CREATED": "プロンプトを新規作成しました",
