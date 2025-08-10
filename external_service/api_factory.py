@@ -22,13 +22,13 @@ class APIFactory:
                 provider = APIProvider(provider.lower())
             except ValueError:
                 raise APIError(f"未対応のAPIプロバイダー: {provider}")
-        
+
         client_mapping = {
             APIProvider.CLAUDE: ClaudeAPIClient,
             APIProvider.OPENAI: OpenAIAPIClient,
             APIProvider.GEMINI: GeminiAPIClient,
         }
-        
+
         if provider in client_mapping:
             return client_mapping[provider]()
         else:
