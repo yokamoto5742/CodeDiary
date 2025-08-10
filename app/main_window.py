@@ -17,7 +17,6 @@ from widgets import (
 
 
 class CodeDiaryMainWindow:
-    """メインウィンドウクラス"""
 
     def __init__(self, root):
         self.root = root
@@ -29,7 +28,6 @@ class CodeDiaryMainWindow:
         self._setup_bindings()
 
     def _setup_locale(self):
-        """ロケール設定"""
         try:
             locale.setlocale(locale.LC_ALL, 'ja_JP.UTF-8')
         except locale.Error:
@@ -42,9 +40,7 @@ class CodeDiaryMainWindow:
                     print("警告: 日本語ロケールの設定に失敗しました。デフォルトロケールを使用します。")
 
     def _setup_ui(self):
-        """UI設定"""
-        # ウィンドウ設定
-        window_width = self.config.get('WindowSettings', 'window_width', fallback='800')
+        window_width = self.config.get('WindowSettings', 'window_width', fallback='600')
         window_height = self.config.get('WindowSettings', 'window_height', fallback='600')
 
         self.root.title(f"CodeDiary v{__version__}")
@@ -60,7 +56,6 @@ class CodeDiaryMainWindow:
         main_frame.columnconfigure(0, weight=1)
         main_frame.rowconfigure(2, weight=1)
 
-        # 日付選択ウィジェット
         self.date_selection_widget = DateSelectionWidget(
             main_frame,
             self.config
@@ -69,13 +64,11 @@ class CodeDiaryMainWindow:
             row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 10)
         )
 
-        # 進捗表示ウィジェット
         self.progress_widget = ProgressWidget(main_frame)
         self.progress_widget.grid(
             row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 5)
         )
 
-        # 日誌内容表示ウィジェット
         self.diary_content_widget = DiaryContentWidget(
             main_frame,
             self.config
@@ -84,13 +77,11 @@ class CodeDiaryMainWindow:
             row=2, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10)
         )
 
-        # 操作ボタンウィジェット
         self.control_buttons_widget = ControlButtonsWidget(main_frame)
         self.control_buttons_widget.grid(
             row=3, column=0, sticky=(tk.W, tk.E)
         )
 
-        # ボタンのコールバック設定
         self.control_buttons_widget.set_callbacks(
             create_diary=self._create_diary,
             copy_text=self._copy_all_text,
@@ -100,20 +91,17 @@ class CodeDiaryMainWindow:
         )
 
     def _setup_bindings(self):
-        """キーバインド設定"""
         self.root.bind('<Return>', lambda e: self._create_diary())
         self.root.bind('<Control-c>', lambda e: self._copy_all_text())
         self.root.bind('<Control-l>', lambda e: self._clear_text())
 
     def _validate_dates(self):
-        """日付の妥当性を検証"""
         is_valid, error_message = self.date_selection_widget.validate_dates()
         if not is_valid:
             messagebox.showerror("エラー", error_message)
         return is_valid
 
     def _create_diary(self):
-        """日誌作成処理"""
         try:
             if not self._validate_dates():
                 return
@@ -137,7 +125,6 @@ class CodeDiaryMainWindow:
             self.progress_widget.clear_message()
 
     def _generate_diary_thread(self, start_date, end_date):
-        """日誌生成スレッド処理"""
         try:
             diary_content, input_tokens, output_tokens = self.diary_generator.generate_diary(
                 since_date=start_date,
@@ -150,11 +137,9 @@ class CodeDiaryMainWindow:
             self.root.after(0, self._display_error, str(e))
 
     def _display_diary_result(self, diary_content, input_tokens, output_tokens):
-        """日誌生成結果の表示"""
         try:
             self.diary_content_widget.set_content(diary_content)
 
-            # クリップボードに内容をコピー
             self.root.clipboard_clear()
             self.root.clipboard_append(diary_content)
 
@@ -163,30 +148,27 @@ class CodeDiaryMainWindow:
             self._set_buttons_state(True)
             self.control_buttons_widget.set_copy_button_state(True)
 
-            # Google Form自動化を実行（クリップボードにコンテンツがある状態で）
             self._execute_GoogleFormAutomation()
 
         except Exception as e:
             self._display_error(f"結果表示エラー: {str(e)}")
 
     def _execute_GoogleFormAutomation(self):
-        """Google Form自動化実行"""
-
-        def run_google_form():
-            try:
-                automation = GoogleFormAutomation()
-                automation.run_automation()
-            except Exception as e:
-                # スコープ問題を解決: エラーメッセージを直接キャプチャ
-                error_msg = str(e)
-                self.root.after(0, lambda msg=error_msg: self.progress_widget.set_error_message(msg))
-
-        thread = threading.Thread(target=run_google_form)
+        thread = threading.Thread(target=self._run_google_form_automation)
         thread.daemon = True
         thread.start()
 
+    def _run_google_form_automation(self):
+        try:
+            automation = GoogleFormAutomation()
+            automation.run_automation()
+        except Exception as e:
+            self._schedule_error_display(str(e))
+
+    def _schedule_error_display(self, error_message: str):
+        self.root.after(0, lambda: self.progress_widget.set_error_message(error_message))
+
     def _display_error(self, error_message):
-        """エラー表示"""
         messagebox.showerror("エラー", error_message)
         self._set_buttons_state(True)
         self.progress_widget.clear_message()
@@ -200,18 +182,16 @@ class CodeDiaryMainWindow:
                 self.root.clipboard_append(content)
                 messagebox.showinfo("コピー完了", "クリップボードにコピーしました。")
             else:
-                messagebox.showwarning("警告", "コピーする内容がありません。")
+                messagebox.showwarning("警告", "コピーするテキストがありません。")
         except Exception as e:
             messagebox.showerror("エラー", f"コピー中にエラーが発生しました: {str(e)}")
 
     def _clear_text(self):
-        """テキストクリア"""
         self.diary_content_widget.clear_content()
         self.control_buttons_widget.set_copy_button_state(False)
         self.progress_widget.clear_message()
 
     def _setup_repository(self):
-        """リポジトリ設定"""
         try:
             current_path = self.config.get('GIT', 'repository_path', fallback='')
             new_path = filedialog.askdirectory(
@@ -233,5 +213,4 @@ class CodeDiaryMainWindow:
             messagebox.showerror("エラー", f"リポジトリ設定中にエラーが発生しました: {str(e)}")
 
     def _set_buttons_state(self, enabled):
-        """ボタン状態設定"""
         self.control_buttons_widget.set_buttons_state(enabled)
