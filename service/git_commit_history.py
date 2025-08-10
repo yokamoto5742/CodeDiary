@@ -1,13 +1,10 @@
 import os
 import subprocess
-import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List, Dict
 
 from utils.config_manager import load_config
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 class GitCommitHistoryService:
@@ -18,7 +15,7 @@ class GitCommitHistoryService:
 
     def _get_repository_path(self) -> str:
         try:
-            repo_path = self.config.get('GIT', 'repository_path', fallback=str(Path(__file__).parent.parent))
+            repo_path = self.config.get('GIT', 'repository_path', fallback=None)
 
             if not os.path.exists(repo_path):
                 raise Exception(f"リポジトリパスが存在しません: {repo_path}")

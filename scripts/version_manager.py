@@ -1,6 +1,5 @@
 import os
 import re
-import sys
 from datetime import datetime
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -16,7 +15,7 @@ def get_current_version():
         if match:
             return match.group(1)
         else:
-            print("Warning: __version__ が見つかりません。デフォルトバージョンを返します。")
+            print("Warning: __version__ が見つかりません。")
             return "0.0.0"
     except FileNotFoundError:
         print(f"Error: {APP_INIT_PATH} が見つかりません。")
