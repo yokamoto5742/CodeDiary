@@ -165,6 +165,7 @@ class ProgrammingDiaryGenerator:
                 project_diary = f"{project_name}\n{plain_diary}"
             except Exception as e:
                 print(f"プロジェクト名の取得に失敗しました: {e}")
+                project_diary = plain_diary
 
             return project_diary, input_tokens, output_tokens
 
