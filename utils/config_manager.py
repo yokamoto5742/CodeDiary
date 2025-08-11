@@ -2,7 +2,7 @@ import configparser
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 from dotenv import load_dotenv
 
@@ -22,7 +22,6 @@ CONFIG_PATH = get_config_path()
 
 
 def load_environment_variables():
-    """環境変数を読み込む"""
     current_dir = Path(__file__).parent.parent
     env_path = current_dir / '.env'
 
@@ -32,7 +31,6 @@ def load_environment_variables():
     return False
 
 
-# 環境変数を読み込み
 load_environment_variables()
 
 
@@ -44,9 +42,6 @@ def load_config() -> configparser.ConfigParser:
     except FileNotFoundError:
         print(f"設定ファイルが見つかりません: {CONFIG_PATH}")
         raise
-    except PermissionError:
-        print(f"設定ファイルを読み取る権限がありません: {CONFIG_PATH}")
-        raise
     except configparser.Error as e:
         print(f"設定ファイルの解析中にエラーが発生しました: {e}")
         raise
@@ -57,9 +52,6 @@ def save_config(config: configparser.ConfigParser):
     try:
         with open(CONFIG_PATH, 'w', encoding='utf-8') as configfile:
             config.write(configfile)
-    except PermissionError:
-        print(f"設定ファイルを書き込む権限がありません: {CONFIG_PATH}")
-        raise
     except IOError as e:
         print(f"設定ファイルの保存中にエラーが発生しました: {e}")
         raise
@@ -68,8 +60,8 @@ def save_config(config: configparser.ConfigParser):
 def get_ai_provider_config() -> Dict[str, str]:
     config = load_config()
 
-    provider = config.get('AI', 'provider', fallback='openai')
-    fallback_provider = config.get('AI', 'fallback_provider', fallback='gemini')
+    provider = config.get('AI', 'provider', fallback='gemini')
+    fallback_provider = config.get('AI', 'fallback_provider', fallback='openai')
 
     return {
         'provider': provider,
@@ -123,7 +115,7 @@ def get_active_provider() -> str:
 
     fallback_provider = config['fallback_provider']
     if available_providers.get(fallback_provider, False):
-        print(f"警告: メインプロバイダー '{main_provider}' が利用できないため、'{fallback_provider}' を使用します")
+        print(f"警告: '{main_provider}' が利用できないため、'{fallback_provider}' を使用します")
         return fallback_provider
 
     for provider, available in available_providers.items():
@@ -136,8 +128,8 @@ def get_active_provider() -> str:
 
 CLAUDE_API_KEY = os.environ.get("CLAUDE_API_KEY")
 CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL")
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-OPENAI_MODEL = os.environ.get("OPENAI_MODEL")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL")
 GEMINI_THINKING_BUDGET = os.environ.get("GEMINI_THINKING_BUDGET")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL")
