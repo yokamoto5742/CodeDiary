@@ -5,6 +5,13 @@ from utils.config_manager import GEMINI_API_KEY, GEMINI_MODEL, GEMINI_THINKING_B
 from utils.constants import MESSAGES
 from utils.exceptions import APIError
 
+try:
+    import google.generativeai as genai
+
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+
 
 class GeminiAPIClient(BaseAPIClient):
     def __init__(self):
@@ -14,6 +21,9 @@ class GeminiAPIClient(BaseAPIClient):
 
     def initialize(self) -> bool:
         try:
+            if not GEMINI_AVAILABLE:
+                raise APIError("Gemini SDK が利用できません")
+
             if self.api_key:
                 genai.configure(api_key=self.api_key)
                 return True
