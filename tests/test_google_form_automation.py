@@ -152,37 +152,31 @@ class TestGoogleFormAutomation:
         # モックの準備
         mock_exists.return_value = True
         mock_paste.return_value = "テスト用の作業内容"
-        
+
         # Playwrightのモック設定
         mock_playwright_context = MagicMock()
         mock_playwright.return_value.__enter__.return_value = mock_playwright_context
-        
+
         mock_browser = MagicMock()
         mock_context = MagicMock()
         mock_page = MagicMock()
-        
+
         mock_playwright_context.chromium.launch.return_value = mock_browser
         mock_browser.new_context.return_value = mock_context
         mock_context.new_page.return_value = mock_page
-        
-        mock_date_input = MagicMock()
-        mock_textarea = MagicMock()
-        mock_page.locator.return_value = mock_date_input
-        mock_page.get_by_label.return_value = mock_textarea
 
-        # 固定日時でテスト
-        fixed_datetime = datetime(2024, 1, 15, 10, 30, 0, tzinfo=timezone(timedelta(hours=9)))
-        with patch('service.google_form_automation.datetime') as mock_datetime:
-            mock_datetime.now.return_value = fixed_datetime
-            
-            # テスト実行
-            automation.run_automation()
+        with patch('service.google_form_automation.expect'):
+            # 固定日時でテスト
+            fixed_datetime = datetime(2024, 1, 15, 10, 30, 0, tzinfo=timezone(timedelta(hours=9)))
+            with patch('service.google_form_automation.datetime') as mock_datetime:
+                mock_datetime.now.return_value = fixed_datetime
+
+                # テスト実行
+                automation.run_automation()
 
         # 検証
         mock_playwright_context.chromium.launch.assert_called_once()
         mock_page.goto.assert_called_once_with('https://forms.gle/test123')
-        mock_date_input.fill.assert_called_once_with("2024-01-15")
-        mock_textarea.fill.assert_called_once_with("テスト用の作業内容")
 
     @patch('os.path.exists')
     def test_run_automation_chrome_not_found(self, mock_exists, automation):

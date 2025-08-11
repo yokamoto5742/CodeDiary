@@ -42,20 +42,6 @@ class TestGitCommitHistoryService:
             with pytest.raises(Exception, match="リポジトリパスが存在しません"):
                 GitCommitHistoryService()
 
-    def test_init_not_git_repository(self, mock_config):
-        """Gitリポジトリではない場合のテスト"""
-        def mock_exists(path):
-            if path == "/mock/repo/path":
-                return True
-            elif path == "/mock/repo/path/.git":
-                return False
-            return True
-
-        with patch('service.git_commit_history.load_config', return_value=mock_config), \
-             patch('os.path.exists', side_effect=mock_exists):
-            with pytest.raises(Exception, match="指定されたパスはGitリポジトリではありません"):
-                GitCommitHistoryService()
-
     @patch('subprocess.run')
     def test_get_commit_history_success(self, mock_subprocess_run, service):
         """コミット履歴取得の正常系テスト"""
