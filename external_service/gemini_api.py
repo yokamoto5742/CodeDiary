@@ -1,16 +1,11 @@
 from typing import Tuple
 
+import google.generativeai as genai
+
 from external_service.base_api import BaseAPIClient
 from utils.config_manager import GEMINI_API_KEY, GEMINI_MODEL, GEMINI_THINKING_BUDGET
 from utils.constants import MESSAGES
 from utils.exceptions import APIError
-
-try:
-    import google.generativeai as genai
-
-    GEMINI_AVAILABLE = True
-except ImportError:
-    GEMINI_AVAILABLE = False
 
 
 class GeminiAPIClient(BaseAPIClient):
@@ -21,9 +16,6 @@ class GeminiAPIClient(BaseAPIClient):
 
     def initialize(self) -> bool:
         try:
-            if not GEMINI_AVAILABLE:
-                raise APIError("Gemini SDK が利用できません")
-
             if self.api_key:
                 genai.configure(api_key=self.api_key)
                 return True
@@ -33,9 +25,6 @@ class GeminiAPIClient(BaseAPIClient):
             raise APIError(f"Gemini API初期化エラー: {str(e)}")
 
     def _generate_content(self, prompt: str, model_name: str) -> Tuple[str, int, int]:
-        if not GEMINI_AVAILABLE:
-            raise APIError("Gemini SDK が利用できません")
-
         try:
             model = genai.GenerativeModel(model_name)
             response = model.generate_content(prompt)
