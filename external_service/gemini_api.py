@@ -5,16 +5,6 @@ from utils.config_manager import GEMINI_API_KEY, GEMINI_MODEL, GEMINI_THINKING_B
 from utils.constants import MESSAGES
 from utils.exceptions import APIError
 
-try:
-    from google import genai
-    from google.genai import types
-
-    GEMINI_AVAILABLE = True
-except ImportError:
-    GEMINI_AVAILABLE = False
-    genai = None
-    types = None
-
 
 class GeminiAPIClient(BaseAPIClient):
     def __init__(self):
@@ -23,13 +13,9 @@ class GeminiAPIClient(BaseAPIClient):
         self.thinking_budget = GEMINI_THINKING_BUDGET
 
     def initialize(self) -> bool:
-        if not GEMINI_AVAILABLE:
-            raise APIError(
-                "Gemini SDK がインストールされていません。'pip install google-generativeai' を実行してください。")
-
         try:
             if self.api_key:
-                self.client = genai.Client(api_key=self.api_key)
+                genai.configure(api_key=self.api_key)
                 return True
             else:
                 raise APIError(MESSAGES["API_CREDENTIALS_MISSING"])
@@ -41,21 +27,8 @@ class GeminiAPIClient(BaseAPIClient):
             raise APIError("Gemini SDK が利用できません")
 
         try:
-            if self.thinking_budget:
-                response = self.client.models.generate_content(
-                    model=model_name,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        thinking_config=types.ThinkingConfig(
-                            thinking_budget=int(self.thinking_budget)
-                        )
-                    )
-                )
-            else:
-                response = self.client.models.generate_content(
-                    model=model_name,
-                    contents=prompt
-                )
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content(prompt)
 
             if hasattr(response, 'text'):
                 summary_text = response.text
