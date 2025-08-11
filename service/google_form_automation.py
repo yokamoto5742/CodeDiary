@@ -14,12 +14,10 @@ class GoogleFormAutomation:
         self.chrome_path = self._get_chrome_path()
 
     def _get_chrome_path(self) -> str:
-        try:
-            chrome_path = self.config.get('Chrome', 'chrome_path', fallback=None)
-            return chrome_path
-        except Exception as e:
-            print(f"Chrome設定の取得に失敗しました: {e}")
+        chrome_path = self.config.get('Chrome', 'chrome_path', fallback=None)
+        if not chrome_path:
             raise Exception("設定ファイルにchrome_pathが設定されていません")
+        return chrome_path
 
     def _check_chrome_path(self) -> bool:
         if not os.path.exists(self.chrome_path):
@@ -51,7 +49,6 @@ class GoogleFormAutomation:
             clipboard_content = self._get_clipboard_content()
             today_date = self._get_today_date_string()
 
-            print(f"Chrome実行ファイル: {self.chrome_path}")
             print(f"作成日: {today_date}")
             print(f"作業内容: {clipboard_content[:50]}...")
 
@@ -75,48 +72,19 @@ class GoogleFormAutomation:
                     expect(date_input).to_be_visible(timeout=10000)
                     date_input.fill(today_date)
 
-                    content_selectors = [
-                        'textarea[aria-label*="回答を入力"]',
-                    ]
+                    content_textarea = page.get_by_label("作業内容")
+                    expect(content_textarea).to_be_visible(timeout=5000)
+                    content_textarea.fill(clipboard_content)
+                    print("作業内容を入力し自動入力が完了しました")
 
-
-                    content_filled = False
-                    for selector in content_selectors:
-                        try:
-                            content_textarea = page.locator(selector).first
-                            if content_textarea.is_visible():
-                                expect(content_textarea).to_be_visible(timeout=5000)
-                                content_textarea.fill(clipboard_content)
-                                content_filled = True
-                                print(f"作業内容を入力しました (使用セレクタ: {selector})")
-                                break
-                        except Exception:
-                            continue
-
-                    if not content_filled:
-                        print("警告: 作業内容フィールドが見つかりませんでした")
-                        print("手動で作業内容を入力してください")
-
-                    print("自動入力が完了しました")
-                    print("フォームページを閉じるには、ブラウザを閉じてください...")
-                    try:
-                        page.wait_for_event('close', timeout=0)
-                    except:
-                        pass
+                    page.wait_for_event('close', timeout=0)
 
                 except Exception as e:
                     print(f"フォーム自動入力中にエラーが発生しました: {e}")
-                    try:
-                        page.wait_for_event('close', timeout=0)
-                    except:
-                        pass
 
                 finally:
-                    try:
-                        context.close()
-                        browser.close()
-                    except:
-                        pass
+                    context.close()
+                    browser.close()
 
         except Exception as e:
             print(f"エラー: {e}")
