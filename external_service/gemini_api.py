@@ -20,7 +20,7 @@ class GeminiAPIClient(BaseAPIClient):
                 genai.configure(api_key=self.api_key)
                 return True
             else:
-                raise APIError(MESSAGES["API_CREDENTIALS_MISSING"])
+                raise APIError(MESSAGES["GEMINI_API_CREDENTIALS_MISSING"])
         except Exception as e:
             raise APIError(f"Gemini API初期化エラー: {str(e)}")
 

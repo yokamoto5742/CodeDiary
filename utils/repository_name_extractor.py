@@ -12,4 +12,4 @@ def get_repository_directory_name() -> str:
         return repo_dir_name
         
     except Exception as e:
-        raise Exception(f"プロジェクト名の取得に失敗しました: {e}")
+        raise Exception(f"プロジェクト名取得に失敗しました: {e}")
