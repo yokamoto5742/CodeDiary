@@ -115,7 +115,6 @@ class ProgrammingDiaryGenerator:
             print(f"   使用モデル: {self.default_model}")
             print(f"   リポジトリパス: {self.git_service.repository_path}")
             print(f"   検索期間: {since_date} から {until_date}")
-            print(f"   作成者フィルタ: {author or '全て'}")
 
             repo_info = self.git_service.get_repository_info()
             print(f"   現在のブランチ: {repo_info['current_branch']}")
@@ -129,25 +128,6 @@ class ProgrammingDiaryGenerator:
             )
 
             print(f"   取得したコミット数: {len(commits)}")
-
-            if not commits:
-                print("⚠️ 指定期間にコミットが見つかりませんでした。過去7日間で再検索します...")
-                extended_since = (datetime.now(self.jst) - timedelta(days=7)).strftime('%Y-%m-%d')
-                extended_commits = self.git_service.get_commit_history(
-                    since_date=extended_since,
-                    until_date=until_date,
-                    author=author,
-                    max_count=5
-                )
-                if extended_commits:
-                    print(f"   過去7日間では {len(extended_commits)} 件のコミットが見つかりました")
-                    print("   最新のコミット:")
-                    for i, commit in enumerate(extended_commits[:3]):
-                        print(f"     {i + 1}. {commit['timestamp']}: {commit['message']}")
-                else:
-                    print("   過去7日間でもコミットが見つかりませんでした")
-
-                return "指定期間にコミット履歴が見つかりませんでした。", 0, 0
 
             prompt_template = self._load_prompt_template()
             formatted_commits = self._format_commits_for_prompt(commits)
