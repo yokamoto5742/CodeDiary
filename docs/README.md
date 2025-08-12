@@ -1,28 +1,27 @@
-# マニュアル検索ツール
+# CodeDiary
 
 ## プロジェクト概要
 
-**マニュアル検索ツール**は、PDF、テキスト、Markdownファイルで作成されたマニュアルを効率的に検索するためのデスクトップアプリケーションです。
+**CodeDiary**は、Gitコミット履歴を基に生成AIを活用してプログラミング日誌を自動生成するデスクトップアプリケーションです。開発者の日々の作業を構造化された日誌形式に変換し、Google Formへの自動入力まで行います。
 
 ### 主要な機能
 
-- **複数ファイル形式対応**: PDF、TXT、Markdownファイルの横断検索
-- **高速インデックス検索**: 事前にインデックスを作成して高速検索を実現
-- **PDF連携**: Adobe Acrobat Readerと連携し、検索語をハイライト表示
-- **柔軟な検索条件**: AND/OR検索、サブフォルダ検索対応
-- **視覚的な結果表示**: 検索結果をハイライト表示で見やすく提示
+- **Gitコミット履歴の自動取得**: 指定期間内のコミット履歴を抽出
+- **生成AI活用日誌生成**: 複数のAIプロバイダー（Claude、OpenAI、Gemini）による構造化された日誌作成
+- **フォールバック機能**: フォールバック機能により、メインプロバイダーが利用できない場合の自動切り替え
+- **Google Form自動入力**: 生成された日誌のワンクリック送信
 
 ### 対象ユーザー
 
-- 大量の文書やマニュアルを管理する方
-- 複数のPDFファイルから情報を効率的に検索したい方
-- ドキュメント管理業務に従事する方
+- 日々の開発作業を記録したいソフトウェア開発者
+- プロジェクト進捗の可視化が必要なチームリーダー
+- 開発日誌の作成を効率化したい個人・チーム
 
 ### 解決する問題
 
-- 複数のPDFファイルにまたがる情報検索の効率化
-- 検索結果の視覚的な確認とファイルへの直接アクセス
-- 大量ファイルに対する高速検索の実現
+- 手動での開発日誌作成の時間コスト削減
+- コミット履歴の構造化と可読性向上
+- 定期的な作業報告の自動化
 
 ## 前提条件と要件
 
@@ -30,12 +29,20 @@
 
 - **OS**: Windows 11
 - **Python**: 3.11以降推奨
-- **Adobe Acrobat Reader DC**: PDF表示機能に必要
+- **Google Chrome**: Google Form自動入力機能に必要
 
 ### ハードウェア要件
 
 - **RAM**: 4GB以上推奨
-- **ストレージ**: インデックスファイル用に追加容量が必要
+- **ストレージ**: 100MB以上の空き容量
+
+### 必要なAPIキー
+
+以下のうち少なくとも1つのAPIキーが必要です：
+
+- **Claude API**: Anthropic社のClaude APIキー
+- **OpenAI API**: OpenAI社のAPIキー
+- **Gemini API**: Google社のGemini APIキー
 
 ## インストール手順
 
@@ -51,7 +58,7 @@ python --version
 
 ```bash
 git clone <repository-url>
-cd ManualSearch
+cd CodeDiary
 ```
 
 ### 3. 仮想環境の作成（推奨）
@@ -67,13 +74,32 @@ venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 ```
 
-### 5. Adobe Acrobat Reader DCのインストール
+### 5. 環境変数の設定
 
-PDF機能を使用するには、Adobe Acrobat Reader DCが必要です：
-- [Adobe公式サイト](https://get.adobe.com/jp/reader/)からダウンロード
-- デフォルトパス: `C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe`
+プロジェクトルートに`.env`ファイルを作成し、以下の形式でAPIキーを設定してください：
 
-### 6. 設定ファイルの準備
+```env
+# Claude API（推奨）
+CLAUDE_API_KEY=your_claude_api_key_here
+CLAUDE_MODEL=claude-3-5-haiku-20241022
+
+# OpenAI API
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-5-mini
+
+# Gemini API
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_THINKING_BUDGET=-1
+```
+
+### 6. Google Chromeのインストール
+
+Google Form自動入力機能を使用する場合は、Google Chromeをインストールしてください：
+- [Google Chrome公式サイト](https://www.google.com/chrome/)からダウンロード
+- デフォルトパス: `C:\Program Files\Google\Chrome\Application\chrome.exe`
+
+### 7. 設定ファイルの確認
 
 初回起動時に`utils/config.ini`が自動作成されます。必要に応じて設定を変更してください。
 
@@ -86,134 +112,170 @@ PDF機能を使用するには、Adobe Acrobat Reader DCが必要です：
    python main.py
    ```
 
-2. **検索対象フォルダの設定**
-   - 「追加」ボタンでフォルダを選択
-   - 複数フォルダの登録が可能
+2. **Gitリポジトリの設定**
+   - 「Gitリポジトリ設定」ボタンをクリック
+   - 対象のGitリポジトリフォルダを選択
 
-3. **検索の実行**
-   - 検索語を入力（カンマ区切りで複数語可能）
-   - AND/OR検索を選択
-   - 「検索」ボタンをクリック
+3. **対象期間の設定**
+   - 開始日と終了日を選択（カレンダーウィジェット使用）
 
-4. **結果の確認**
-   - 検索結果リストから項目を選択
-   - ダブルクリックでファイルを開く
+4. **日誌生成**
+   - 「日誌作成」ボタンをクリック
+   - AIが自動でコミット履歴を解析し、日誌を生成
 
-### インデックス機能の使用
+5. **結果の確認と利用**
+   - 生成された日誌が画面に表示
+   - 自動的にクリップボードにコピー
+   - Google Formに自動入力（設定済みの場合）
 
-高速検索のためのインデックス機能：
+### 高度な使用方法
 
-1. **インデックス管理画面を開く**
-   - 「インデックス設定」ボタンをクリック
+#### AIプロバイダーの変更
 
-2. **インデックス作成**
-   - 「インデックス作成」ボタンで初回作成
-   - 「インデックス更新」で差分更新
+`utils/config.ini`ファイルを編集：
 
-3. **インデックス検索の有効化**
-   - 「インデックス検索」チェックボックスを有効にする
+```ini
+[AI]
+provider = claude  # claude, openai, gemini から選択
+fallback_provider = openai  # メイン失敗時のフォールバック先
+```
 
-### 検索のコツ
+#### Google Form設定
 
-- **AND検索**: すべての語を含むページを検索
-- **OR検索**: いずれかの語を含むページを検索
-- **サブフォルダ検索**: 指定フォルダ以下を再帰的に検索
+```ini
+[URL]
+form_url = https://forms.gle/your_form_id_here
+```
+
+#### UI設定のカスタマイズ
+
+```ini
+[DiaryText]
+font = メイリオ
+font_size = 11
+
+[WindowSettings]
+window_width = 600
+window_height = 600
+```
 
 ## プロジェクト構造
 
 ```
-ManualSearch/
+CodeDiary/
 ├── main.py                     # アプリケーションエントリーポイント
-├── constants.py                # 定数定義
 ├── requirements.txt            # 依存関係
+├── prompt_template.md          # AI用プロンプトテンプレート
 ├── app/
 │   ├── __init__.py
 │   └── main_window.py          # メインウィンドウ
+├── external_service/
+│   ├── __init__.py
+│   ├── api_factory.py          # AIプロバイダーファクトリ
+│   ├── base_api.py             # 基底APIクライアント
+│   ├── claude_api.py           # Claude APIクライアント
+│   ├── gemini_api.py           # Gemini APIクライアント
+│   └── openai_api.py           # OpenAI APIクライアント
 ├── service/
-│   ├── file_opener.py          # ファイル開く機能
-│   ├── file_searcher.py        # ファイル検索エンジン
-│   ├── indexed_file_searcher.py # インデックス検索
-│   ├── search_indexer.py       # インデックス作成・管理
-│   ├── pdf_handler.py          # PDF処理
-│   └── text_handler.py         # テキスト処理
-├── widgets/
-│   ├── search_widget.py        # 検索UI
-│   ├── results_widget.py       # 結果表示UI
-│   ├── directory_widget.py     # フォルダ選択UI
-│   └── index_management_widget.py # インデックス管理UI
+│   ├── __init__.py
+│   ├── git_commit_history.py   # Gitコミット履歴取得
+│   ├── google_form_automation.py # Google Form自動入力
+│   └── programming_diary_generator.py # 日誌生成エンジン
 ├── utils/
+│   ├── config.ini              # 設定ファイル
 │   ├── config_manager.py       # 設定管理
-│   └── helpers.py              # ヘルパー関数
-└── templates/
-    └── text_viewer.html        # テキスト表示テンプレート
+│   ├── constants.py            # 定数定義
+│   ├── exceptions.py           # カスタム例外
+│   ├── env_loader.py           # 環境変数読み込み
+│   └── repository_name_extractor.py # リポジトリ名抽出
+├── widgets/
+│   ├── __init__.py
+│   ├── control_buttons_widget.py # ボタン群ウィジェット
+│   ├── date_selection_widget.py  # 日付選択ウィジェット
+│   ├── diary_content_widget.py   # 日誌表示ウィジェット
+│   └── progress_widget.py        # 進捗表示ウィジェット
+├── scripts/
+│   ├── project_structure.py   # プロジェクト構造出力
+│   └── version_manager.py     # バージョン管理
+└── tests/                     # テストファイル群
 ```
 
 ### 主要ファイルの役割
 
-- **main.py**: アプリケーションの起動とQtアプリケーションの初期化
-- **main_window.py**: メインUIとコンポーネント間の連携
-- **file_searcher.py**: ファイル内容の検索処理
-- **indexed_file_searcher.py**: インデックスを使用した高速検索
-- **search_indexer.py**: 検索インデックスの作成と管理
-- **config_manager.py**: 設定ファイルの読み書き
+- **main.py**: アプリケーションの起動とTkinterアプリケーションの初期化
+- **main_window.py**: メインUIとコンポーネント間の連携制御
+- **programming_diary_generator.py**: コミット履歴を日誌に変換するメインエンジン
+- **git_commit_history.py**: Gitコマンドを使用したコミット履歴の取得
+- **api_factory.py**: AIプロバイダーの動的選択と初期化
+- **config_manager.py**: 設定ファイルと環境変数の統合管理
 
 ## 機能説明
 
-### 検索エンジン
+### GitCommitHistoryService クラス
 
-#### FileSearcher クラス
-通常の全文検索を実行します。
+Gitリポジトリからコミット履歴を取得します。
 
 ```python
 # 基本的な使用例
-searcher = FileSearcher(
-    directory="C:/Documents",
-    search_terms=["検索語1", "検索語2"],
-    include_subdirs=True,
-    search_type="AND",
-    file_extensions=['.pdf', '.txt', '.md'],
-    context_length=100
+service = GitCommitHistoryService()
+commits = service.get_commit_history(
+    since_date="2024-01-01",
+    until_date="2024-01-31",
+    author="username"
 )
 ```
 
-#### SmartFileSearcher クラス
-インデックスを活用した高速検索を実行します。
+#### 主要メソッド
+
+- `get_commit_history()`: 指定期間のコミット履歴取得
+- `get_repository_info()`: リポジトリの基本情報取得
+- `format_output()`: コミット履歴の整形出力
+
+### ProgrammingDiaryGenerator クラス
+
+AIを使用してコミット履歴から構造化された日誌を生成します。
 
 ```python
-# インデックス検索の使用例
-smart_searcher = SmartFileSearcher(
-    directory="C:/Documents",
-    search_terms=["検索語"],
-    use_index=True,
-    index_file_path="search_index.json"
+# 日誌生成の例
+generator = ProgrammingDiaryGenerator()
+diary, input_tokens, output_tokens = generator.generate_diary(
+    since_date="2024-01-01",
+    until_date="2024-01-07",
+    days=7  # または日数指定
 )
 ```
 
-### PDF処理機能
+#### 特徴
 
-#### PDF ハイライト機能
-検索語をPDFにハイライト表示します。
+- **複数AIプロバイダー対応**: Claude、OpenAI、Geminiの自動切り替え
+- **フォールバック機能**: メインプロバイダー失敗時の自動代替
+- **Markdown→プレーンテキスト変換**: 出力形式の最適化
+
+### GoogleFormAutomation クラス
+
+生成された日誌をGoogle Formに自動入力します。
 
 ```python
-# PDFハイライトの例
-highlighted_path = highlight_pdf(
-    pdf_path="document.pdf",
-    search_terms=["重要", "確認"]
-)
+# 自動入力の実行
+automation = GoogleFormAutomation()
+automation.run_automation()  # クリップボードの内容を自動入力
 ```
 
-### インデックス管理
+#### 機能
 
-#### SearchIndexer クラス
-検索用インデックスの作成と管理を行います。
+- **Playwright使用**: 高信頼性のブラウザ自動化
+- **日付自動入力**: 実行日の自動設定
+- **エラーハンドリング**: 入力失敗時の適切な対応
+
+### API Factory パターン
+
+複数のAIプロバイダーを統一インターフェースで利用できます。
 
 ```python
-# インデックス作成の例
-indexer = SearchIndexer("search_index.json")
-indexer.create_index(
-    directories=["C:/Documents", "C:/Manuals"],
-    include_subdirs=True
-)
+# プロバイダーの動的選択
+client = APIFactory.create_client("claude")
+client.initialize()
+result = client._generate_content(prompt, model_name)
 ```
 
 ## 設定
@@ -221,105 +283,178 @@ indexer.create_index(
 ### config.ini の主要設定項目
 
 ```ini
+[AI]
+provider = claude              # メインAIプロバイダー
+fallback_provider = openai     # フォールバックプロバイダー
+
+[GIT]
+repository_path = C:/path/to/your/repo  # Gitリポジトリパス
+
+[Chrome]
+chrome_path = C:/Program Files/Google/Chrome/Application/chrome.exe
+
+[URL]
+form_url = https://forms.gle/your_form_id
+
 [WindowSettings]
-window_width = 1150
-window_height = 800
-font_size = 14
+window_width = 600
+window_height = 600
 
-[Paths]
-acrobat_path = C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe
-
-[IndexSettings]
-index_file_path = C:\search_index.json
-use_index_search = True
-
-[SearchSettings]
-context_length = 100
+[DiaryText]
+font = メイリオ
+font_size = 11
 ```
 
-### 設定のカスタマイズ
+### 環境変数設定
 
-- **フォントサイズ**: UIの文字サイズを調整
-- **Acrobatパス**: Adobe Acrobat Readerのインストールパスを指定
-- **インデックスパス**: インデックスファイルの保存場所を指定
-- **コンテキスト長**: 検索結果表示時の前後文字数
+`.env`ファイルでAPIキーを管理：
+
+```env
+# 優先順位の高いプロバイダーから設定
+CLAUDE_API_KEY=sk-ant-xxxxx
+CLAUDE_MODEL=claude-3-haiku-20240307
+
+OPENAI_API_KEY=sk-xxxxx
+OPENAI_MODEL=gpt-3.5-turbo
+
+GEMINI_API_KEY=xxxxx
+GEMINI_MODEL=gemini-1.5-flash
+GEMINI_THINKING_BUDGET=1024
+```
 
 ## 開発者向け情報
 
 ### 開発環境のセットアップ
 
-   ```bash
-   pip install -r requirements.txt
-   pip install pytest pytest-qt  # テスト用（必要に応じて）
-   ```
+```bash
+# 開発用依存関係のインストール
+pip install pytest pytest-cov
+
+# テストの実行
+pytest tests/
+
+# カバレッジレポートの生成
+pytest --cov=service --cov=external_service --cov=utils --cov-report=html
+```
 
 ### アーキテクチャ
 
 - **MVCパターン**: モデル（Service層）、ビュー（Widgets）、コントローラー（MainWindow）
-- **Qt Signalシステム**: コンポーネント間の疎結合な通信
-- **設定管理**: INIファイルベースの設定永続化
+- **ファクトリーパターン**: AIプロバイダーの動的生成
+- **設定管理**: INIファイルと環境変数の統合管理
 
 ### 拡張方法
 
-1. **新しいファイル形式の追加**
-   - `constants.py`に拡張子を追加
-   - `file_searcher.py`に対応する検索メソッドを実装
+1. **新しいAIプロバイダーの追加**
+   - `external_service/`に新しいAPIクライアントを作成
+   - `BaseAPIClient`を継承し、`_generate_content`メソッドを実装
+   - `api_factory.py`に追加
 
 2. **UI機能の追加**
    - `widgets/`に新しいウィジェットクラスを作成
    - `main_window.py`で統合
 
+3. **新しい出力形式の追加**
+   - `programming_diary_generator.py`の変換メソッドを拡張
+
+### ビルド手順
+
+実行ファイルの作成：
+
+```bash
+python build.py
+```
+
+このコマンドで以下が実行されます：
+- バージョンの自動更新
+- PyInstallerによる実行ファイル生成
+- 必要なリソースファイルの同梱
+
 ## トラブルシューティング
 
 ### よくある問題と解決方法
 
-#### Q: Adobe Acrobat Readerが起動しない
+#### Q: APIキーエラーが発生する
 **A**: 
-- Acrobatのインストールパスを確認してください
-- 設定ファイルの`acrobat_path`を正しいパスに変更してください
-- 管理者権限で実行してみてください
+- `.env`ファイルのAPIキーが正しく設定されているか確認
+- 少なくとも1つのプロバイダーのAPIキーが有効であることを確認
+- APIキーの利用制限や請求状況を確認
 
-#### Q: 検索が遅い
+#### Q: Gitコミット履歴が取得できない
 **A**:
-- インデックス機能を有効にしてください
-- インデックスが古い場合は「インデックス更新」を実行してください
-- 検索対象ファイル数を確認し、必要に応じて範囲を絞ってください
+- 指定したパスが正しいGitリポジトリであることを確認
+- Gitがシステムにインストールされていることを確認
+- リポジトリへの読み取り権限があることを確認
 
-#### Q: 日本語ファイルが正しく検索されない
+#### Q: Google Form自動入力が動作しない
 **A**:
-- ファイルのエンコーディングを確認してください
-- UTF-8またはShift_JISで保存されているファイルを推奨します
+- Chromeのインストールパスを確認
+- フォームURLが正しく設定されているか確認
+- ブラウザがブロックしていないか確認
 
-#### Q: インデックス作成に時間がかかる
+#### Q: 日本語が文字化けする
 **A**:
-- 大量のファイルを処理する場合は時間がかかります
-- バックグラウンド処理なので、他の作業を続けることができます
-- 進行状況バーで進捗を確認してください
+- システムの日本語ロケール設定を確認
+- フォント設定（メイリオ）が利用可能か確認
 
 #### Q: メモリ使用量が多い
 **A**:
-- 一度に検索する対象を減らしてください
-- 古いインデックスファイルをクリーンアップしてください
-- アプリケーションを再起動してください
+- 一度に処理するコミット数を制限
+- 大量のコミット履歴がある場合は期間を短く設定
+- アプリケーションの再起動
 
-### エラーログの確認
+#### Q: 日誌生成に時間がかかる
+**A**:
+- コミット数が多い場合は期間を調整
+- より高速なAIプロバイダーに変更
+- ネットワーク接続状況を確認
 
-アプリケーションの動作に問題がある場合：
-1. コンソール出力を確認してください
-2. 設定ファイル（config.ini）の内容を確認してください
-3. 一時ファイルが正しく削除されているか確認してください
+### デバッグ情報
+
+アプリケーション実行時にコンソールに出力される情報を確認：
+
+```
+🔍 デバッグ情報:
+   AIプロバイダー: claude
+   使用モデル: claude-3-haiku-20240307
+   リポジトリパス: /path/to/repo
+   検索期間: 2024-01-01 から 2024-01-07
+   現在のブランチ: main
+   最新コミット: abc123 by User on 2024-01-07
+   取得したコミット数: 15
+```
 
 ### パフォーマンス最適化
 
-- 定期的なインデックスクリーンアップ
-- 不要な一時ファイルの削除
-- 検索対象フォルダの適切な選択
+- **期間の適切な設定**: 大量のコミットを避けるため、適切な期間を設定
+- **AIプロバイダーの選択**: 用途に応じて最適なプロバイダーを選択
+- **メモリ管理**: 長時間使用時は定期的にアプリケーションを再起動
 
 ## バージョン情報
 
-- **バージョン**: 1.1.3
-- **リリース日**: 2025-07-24
+- **バージョン**: 1.0.1
+- **リリース日**: 2025-08-10
+- **対応Python**: 3.11以降
+- **対応OS**: Windows 11
 
 ## ライセンス
 
 このプロジェクトのライセンス情報については、LICENSEファイルを参照してください。
+
+## サポート
+
+問題や要望がございましたら、以下の方法でお気軽にお問い合わせください：
+
+- GitHub Issues: プロジェクトのIssueページ
+- 開発者へのダイレクトメッセージ
+
+## 貢献
+
+プロジェクトへの貢献を歓迎します！貢献方法：
+
+1. リポジトリをフォーク
+2. フィーチャーブランチを作成
+3. 変更をコミット
+4. プルリクエストを送信
+
+開発に参加される際は、既存のコードスタイルとテストパターンに従ってください。
