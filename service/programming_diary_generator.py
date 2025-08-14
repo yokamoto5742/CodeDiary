@@ -102,7 +102,7 @@ class ProgrammingDiaryGenerator:
                        until_date: Optional[str] = None,
                        days: Optional[int] = None,
                        author: Optional[str] = None,
-                       max_count: Optional[int] = None) -> Tuple[str, int, int]:
+                       max_count: Optional[int] = None) -> Tuple[str, int, int, str]:
         try:
             self.ai_client.initialize()
 
@@ -147,7 +147,7 @@ class ProgrammingDiaryGenerator:
                 print(f"プロジェクト名の取得に失敗しました: {e}")
                 project_diary = plain_diary
 
-            return project_diary, input_tokens, output_tokens
+            return project_diary, input_tokens, output_tokens, self.default_model
 
         except Exception as e:
             return self._try_fallback_provider(

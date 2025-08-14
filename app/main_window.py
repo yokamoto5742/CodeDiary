@@ -126,24 +126,24 @@ class CodeDiaryMainWindow:
 
     def _generate_diary_thread(self, start_date, end_date):
         try:
-            diary_content, input_tokens, output_tokens = self.diary_generator.generate_diary(
+            diary_content, input_tokens, output_tokens, model_name = self.diary_generator.generate_diary(
                 since_date=start_date,
                 until_date=end_date
             )
 
-            self.root.after(0, self._display_diary_result, diary_content, input_tokens, output_tokens)
+            self.root.after(0, self._display_diary_result, diary_content, input_tokens, output_tokens, model_name)
 
         except Exception as e:
             self.root.after(0, self._display_error, str(e))
 
-    def _display_diary_result(self, diary_content, input_tokens, output_tokens):
+    def _display_diary_result(self, diary_content, input_tokens, output_tokens, model_name):
         try:
             self.diary_content_widget.set_content(diary_content)
 
             self.root.clipboard_clear()
             self.root.clipboard_append(diary_content)
 
-            self.progress_widget.set_completion_message(input_tokens, output_tokens)
+            self.progress_widget.set_completion_message(input_tokens, output_tokens, model_name)
 
             self._set_buttons_state(True)
             self.control_buttons_widget.set_copy_button_state(True)

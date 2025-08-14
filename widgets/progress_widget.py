@@ -40,7 +40,7 @@ class ProgressWidget(ttk.Label):
 
             self.timer_after_id = self.after(1000, self._update_elapsed_time)
 
-    def set_completion_message(self, input_tokens: int, output_tokens: int):
+    def set_completion_message(self, input_tokens: int, output_tokens: int, model_name: str = None):
         self._stop_timer()
 
         if self.start_time:
@@ -50,9 +50,11 @@ class ProgressWidget(ttk.Label):
             elapsed_str = "不明"
 
         total_tokens = input_tokens + output_tokens
+        model_info = f", モデル={model_name}" if model_name else ""
+
         message = (
             f"日誌生成完了 処理時間: {elapsed_str}, 文字数: 入力={input_tokens}, "
-            f"出力={output_tokens}, 合計={total_tokens}"
+            f"出力={output_tokens}, 合計={total_tokens}{model_info}"
         )
         self.set_message(message)
 
