@@ -12,6 +12,7 @@ class GoogleFormAutomation:
         self.config = load_config()
         self.jst = timezone(timedelta(hours=9))
         self.chrome_path = self._get_chrome_path()
+        self.content = None
 
     def _get_chrome_path(self) -> str:
         chrome_path = self.config.get('Chrome', 'chrome_path', fallback=None)
@@ -42,11 +43,16 @@ class GoogleFormAutomation:
     def _get_today_date_string(self) -> str:
         return datetime.now(self.jst).strftime("%Y-%m-%d")
 
-    def run_automation(self):
+    def run_automation(self, content: str = None):
         try:
             self._check_chrome_path()
             form_url = self._get_form_url()
-            clipboard_content = self._get_clipboard_content()
+
+            if content:
+                clipboard_content = content
+            else:
+                clipboard_content = self._get_clipboard_content()
+
             today_date = self._get_today_date_string()
 
             print(f"作成日: {today_date}")

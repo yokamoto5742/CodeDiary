@@ -148,20 +148,20 @@ class CodeDiaryMainWindow:
             self._set_buttons_state(True)
             self.control_buttons_widget.set_copy_button_state(True)
 
-            self._execute_GoogleFormAutomation()
+            self._execute_GoogleFormAutomation(diary_content)
 
         except Exception as e:
             self._display_error(f"結果表示エラー: {str(e)}")
 
-    def _execute_GoogleFormAutomation(self):
-        thread = threading.Thread(target=self._run_google_form_automation)
+    def _execute_GoogleFormAutomation(self, diary_content=None):
+        thread = threading.Thread(target=self._run_google_form_automation, args=(diary_content,))
         thread.daemon = True
         thread.start()
 
-    def _run_google_form_automation(self):
+    def _run_google_form_automation(self, diary_content=None):
         try:
             automation = GoogleFormAutomation()
-            automation.run_automation()
+            automation.run_automation(diary_content)
         except Exception as e:
             self._schedule_error_display(str(e))
 
