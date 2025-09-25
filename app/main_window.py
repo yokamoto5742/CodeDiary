@@ -140,16 +140,16 @@ class CodeDiaryMainWindow:
             github_enabled = self.config.getboolean('GITHUB', 'enable_cross_repo_tracking', fallback=False)
             if not github_enabled:
                 messagebox.showwarning(
-                    "GitHub連携無効", 
+                    "GitHub連携無効",
                     "GitHub連携が無効になっています。\nutils/config.iniでenable_cross_repo_tracking=trueに設定してください。"
                 )
                 return
-                
+
             # GitHub認証情報をチェック
             import os
             if not os.getenv('GITHUB_TOKEN') or not os.getenv('GITHUB_USERNAME'):
                 messagebox.showerror(
-                    "GitHub設定エラー", 
+                    "GitHub設定エラー",
                     "GitHub認証情報が設定されていません。\n\n"
                     "以下の環境変数を設定してください：\n"
                     "• GITHUB_TOKEN: Personal Access Token\n"
@@ -160,17 +160,21 @@ class CodeDiaryMainWindow:
                 )
                 return
 
-            since_date, until_date = self.date_selection_widget.get_selected_dates()
-            if not self._validate_dates(since_date, until_date):
+            # 日付を取得して文字列に変換（ここが修正ポイント）
+            since_date_obj, until_date_obj = self.date_selection_widget.get_selected_dates()
+            since_date = since_date_obj.strftime('%Y-%m-%d')  # 文字列に変換
+            until_date = until_date_obj.strftime('%Y-%m-%d')  # 文字列に変換
+
+            if not self._validate_dates(since_date_obj, until_date_obj):  # バリデーションはdateオブジェクトで
                 return
 
             self._set_buttons_state(tk.DISABLED)
             self.progress_widget.start_progress("GitHub連携で日記を生成中...")
 
-            # GitHub用の別スレッドで実行
+            # GitHub用の別スレッドで実行（文字列を渡す）
             thread = threading.Thread(
-                target=self._generate_github_diary_thread, 
-                args=(since_date, until_date),
+                target=self._generate_github_diary_thread,
+                args=(since_date, until_date),  # 文字列を渡す
                 daemon=True
             )
             thread.start()
