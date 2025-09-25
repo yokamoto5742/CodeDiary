@@ -84,6 +84,7 @@ class CodeDiaryMainWindow:
 
         self.control_buttons_widget.set_callbacks(
             create_diary=self._create_diary,
+            create_github_diary=self._create_github_diary,
             copy_text=self._copy_all_text,
             clear_text=self._clear_text,
             setup_repository=self._setup_repository,
@@ -95,11 +96,19 @@ class CodeDiaryMainWindow:
         self.root.bind('<Control-c>', lambda e: self._copy_all_text())
         self.root.bind('<Control-l>', lambda e: self._clear_text())
 
-    def _validate_dates(self):
-        is_valid, error_message = self.date_selection_widget.validate_dates()
-        if not is_valid:
-            messagebox.showerror("エラー", error_message)
-        return is_valid
+    def _validate_dates(self, since_date=None, until_date=None):
+        if since_date is not None and until_date is not None:
+            # GitHub連携用の日付検証
+            if since_date > until_date:
+                messagebox.showerror("エラー", "終了日より前の日付を選択してください。")
+                return False
+            return True
+        else:
+            # 通常の日付検証
+            is_valid, error_message = self.date_selection_widget.validate_dates()
+            if not is_valid:
+                messagebox.showerror("エラー", error_message)
+            return is_valid
 
     def _create_diary(self):
         try:
@@ -123,6 +132,65 @@ class CodeDiaryMainWindow:
             messagebox.showerror("エラー", f"日誌作成中にエラーが発生しました: {str(e)}")
             self._set_buttons_state(True)
             self.progress_widget.clear_message()
+
+    def _create_github_diary(self):
+        """GitHub連携で日記を作成"""
+        try:
+            # GitHub設定をチェック
+            github_enabled = self.config.getboolean('GITHUB', 'enable_cross_repo_tracking', fallback=False)
+            if not github_enabled:
+                messagebox.showwarning(
+                    "GitHub連携無効", 
+                    "GitHub連携が無効になっています。\nutils/config.iniでenable_cross_repo_tracking=trueに設定してください。"
+                )
+                return
+                
+            # GitHub認証情報をチェック
+            import os
+            if not os.getenv('GITHUB_TOKEN') or not os.getenv('GITHUB_USERNAME'):
+                messagebox.showerror(
+                    "GitHub設定エラー", 
+                    "GitHub認証情報が設定されていません。\n\n"
+                    "以下の環境変数を設定してください：\n"
+                    "• GITHUB_TOKEN: Personal Access Token\n"
+                    "• GITHUB_USERNAME: GitHubユーザー名\n\n"
+                    "PowerShellでの設定例：\n"
+                    '$env:GITHUB_TOKEN = "your_token_here"\n'
+                    '$env:GITHUB_USERNAME = "your_username_here"'
+                )
+                return
+
+            since_date, until_date = self.date_selection_widget.get_selected_dates()
+            if not self._validate_dates(since_date, until_date):
+                return
+
+            self._set_buttons_state(tk.DISABLED)
+            self.progress_widget.start_progress("GitHub連携で日記を生成中...")
+
+            # GitHub用の別スレッドで実行
+            thread = threading.Thread(
+                target=self._generate_github_diary_thread, 
+                args=(since_date, until_date),
+                daemon=True
+            )
+            thread.start()
+
+        except Exception as e:
+            messagebox.showerror("エラー", f"GitHub連携日記の作成でエラーが発生しました:\n{str(e)}")
+            self._set_buttons_state(tk.NORMAL)
+            self.progress_widget.stop_progress()
+
+    def _generate_github_diary_thread(self, since_date, until_date):
+        """GitHub日記生成用スレッド"""
+        try:
+            diary_content, input_tokens, output_tokens, model_name = self.diary_generator.generate_diary(
+                since_date=since_date,
+                until_date=until_date,
+                use_github=True
+            )
+            self.root.after(0, self._display_diary_result, diary_content, input_tokens, output_tokens, model_name)
+        except Exception as e:
+            self.root.after(0, self._schedule_error_display, str(e))
 
     def _generate_diary_thread(self, start_date, end_date):
         try:

@@ -7,6 +7,7 @@
 ### 主要な機能
 
 - **Gitコミット履歴の自動取得**: 指定期間内のコミット履歴を抽出
+- **GitHub連携機能**: 複数リポジトリの横断コミット履歴取得（v1.0.4新機能）
 - **生成AI活用日誌生成**: 複数のAIプロバイダー（Claude、OpenAI、Gemini）による構造化された日誌作成
 - **フォールバック機能**: フォールバック機能により、メインプロバイダーが利用できない場合の自動切り替え
 - **Google Form自動入力**: 生成された日誌のワンクリック送信
@@ -43,6 +44,13 @@
 - **Claude API**: Anthropic社のClaude APIキー
 - **OpenAI API**: OpenAI社のAPIキー
 - **Gemini API**: Google社のGemini APIキー
+
+### GitHub連携（オプション）
+
+GitHub連携機能を使用する場合：
+
+- **GitHub Personal Access Token**: 複数リポジトリへの読み取り権限
+- **GitHubユーザー名**: 対象のGitHubアカウント名
 
 ## インストール手順
 
@@ -91,6 +99,10 @@ OPENAI_MODEL=gpt-5-mini
 GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-2.5-flash
 GEMINI_THINKING_BUDGET=-1
+
+# GitHub連携（オプション）
+GITHUB_TOKEN=your_github_personal_access_token
+GITHUB_USERNAME=your_github_username
 ```
 
 ### 6. Google Chromeのインストール
@@ -120,7 +132,8 @@ Google Form自動入力機能を使用する場合は、Google Chromeをイン�
    - 開始日と終了日を選択（カレンダーウィジェット使用）
 
 4. **日誌生成**
-   - 「日誌作成」ボタンをクリック
+   - **ローカル**: 「日誌作成」ボタンをクリック
+   - **GitHub連携**: 「GitHub連携日記作成」ボタンをクリック（全リポジトリ対象）
    - AIが自動でコミット履歴を解析し、日誌を生成
 
 5. **結果の確認と利用**
@@ -179,6 +192,7 @@ CodeDiary/
 ├── service/
 │   ├── __init__.py
 │   ├── git_commit_history.py   # Gitコミット履歴取得
+│   ├── github_commit_tracker.py # GitHub API連携（v1.0.4新規）
 │   ├── google_form_automation.py # Google Form自動入力
 │   └── programming_diary_generator.py # 日誌生成エンジン
 ├── utils/
@@ -238,10 +252,18 @@ AIを使用してコミット履歴から構造化された日誌を生成しま
 ```python
 # 日誌生成の例
 generator = ProgrammingDiaryGenerator()
+
+# ローカルGit
 diary, input_tokens, output_tokens = generator.generate_diary(
     since_date="2024-01-01",
     until_date="2024-01-07",
     days=7  # または日数指定
+)
+
+# GitHub連携（v1.0.4新機能）
+diary, input_tokens, output_tokens = generator.generate_diary(
+    since_date="2024-01-01",
+    use_github=True  # GitHub APIを使用
 )
 ```
 
@@ -289,6 +311,9 @@ fallback_provider = openai     # フォールバックプロバイダー
 
 [GIT]
 repository_path = C:/path/to/your/repo  # Gitリポジトリパス
+
+[GITHUB]
+enable_cross_repo_tracking = true  # GitHub連携機能の有効化
 
 [Chrome]
 chrome_path = C:/Program Files/Google/Chrome/Application/chrome.exe
@@ -432,8 +457,8 @@ python build.py
 
 ## バージョン情報
 
-- **現在のバージョン**: 1.0.3
-- **最終更新日**: 2025年08月14日
+- **現在のバージョン**: 1.0.4
+- **最終更新日**: 2025年09月25日
 - **対応Python**: 3.11以降
 - **対応OS**: Windows 11
 

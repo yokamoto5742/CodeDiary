@@ -77,3 +77,7 @@ class DateSelectionWidget(ttk.LabelFrame):
             return True, ""
         except Exception as e:
             return False, f"日付の取得中にエラーが発生しました: {str(e)}"
+
+    def get_selected_dates(self):
+        """開始日と終了日のタプルを返す"""
+        return self.get_start_date(), self.get_end_date()

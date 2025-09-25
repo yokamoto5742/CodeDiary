@@ -102,7 +102,8 @@ class ProgrammingDiaryGenerator:
                        until_date: Optional[str] = None,
                        days: Optional[int] = None,
                        author: Optional[str] = None,
-                       max_count: Optional[int] = None) -> Tuple[str, int, int, str]:
+                       max_count: Optional[int] = None,
+                       use_github: bool = False) -> Tuple[str, int, int, str]:
         try:
             self.ai_client.initialize()
 
@@ -113,19 +114,44 @@ class ProgrammingDiaryGenerator:
             print(f"🔍 デバッグ情報:")
             print(f"   AIプロバイダー: {self.ai_provider}")
             print(f"   使用モデル: {self.default_model}")
-            print(f"   リポジトリパス: {self.git_service.repository_path}")
-            print(f"   検索期間: {since_date} から {until_date}")
+            
+            if use_github:
+                print(f"   データソース: GitHub API (複数リポジトリ)")
+                from service.github_commit_tracker import GitHubCommitTracker
+                
+                try:
+                    github_tracker = GitHubCommitTracker()
+                    print(f"   GitHubユーザー: {github_tracker.username}")
+                    
+                    if since_date:
+                        commits = github_tracker.get_commits_for_diary_generation(since_date)
+                    else:
+                        # 今日のコミットを取得
+                        today = datetime.now().strftime('%Y-%m-%d')
+                        commits = github_tracker.get_commits_for_diary_generation(today)
+                        
+                    print(f"   検索期間: {since_date or 'today'}")
+                    
+                except Exception as e:
+                    print(f"   GitHub APIエラー: {e}")
+                    print(f"   ローカルGitリポジトリにフォールバック")
+                    use_github = False
+            
+            if not use_github:
+                print(f"   データソース: ローカルGitリポジトリ")
+                print(f"   リポジトリパス: {self.git_service.repository_path}")
+                print(f"   検索期間: {since_date} から {until_date}")
 
-            repo_info = self.git_service.get_repository_info()
-            print(f"   現在のブランチ: {repo_info['current_branch']}")
-            print(f"   最新コミット: {repo_info['latest_commit']}")
+                repo_info = self.git_service.get_repository_info()
+                print(f"   現在のブランチ: {repo_info['current_branch']}")
+                print(f"   最新コミット: {repo_info['latest_commit']}")
 
-            commits = self.git_service.get_commit_history(
-                since_date=since_date,
-                until_date=until_date,
-                author=author,
-                max_count=max_count
-            )
+                commits = self.git_service.get_commit_history(
+                    since_date=since_date,
+                    until_date=until_date,
+                    author=author,
+                    max_count=max_count
+                )
 
             print(f"   取得したコミット数: {len(commits)}")
 
@@ -141,7 +167,12 @@ class ProgrammingDiaryGenerator:
             plain_diary = self._convert_markdown_to_plain_text(diary_content)
 
             try:
-                project_name = get_repository_directory_name()
+                if use_github:
+                    from service.github_commit_tracker import GitHubCommitTracker
+                    github_tracker = GitHubCommitTracker()
+                    project_name = f"GitHub Account: {github_tracker.username}"
+                else:
+                    project_name = get_repository_directory_name()
                 project_diary = f"{project_name}\n{plain_diary}"
             except Exception as e:
                 print(f"プロジェクト名の取得に失敗しました: {e}")
@@ -151,10 +182,10 @@ class ProgrammingDiaryGenerator:
 
         except Exception as e:
             return self._try_fallback_provider(
-                since_date, until_date, days, author, max_count, str(e)
+                since_date, until_date, days, author, max_count, str(e), use_github
             )
 
-    def _try_fallback_provider(self, since_date, until_date, days, author, max_count, original_error):
+    def _try_fallback_provider(self, since_date, until_date, days, author, max_count, original_error, use_github=False):
         try:
             config = get_ai_provider_config()
             available_providers = get_available_providers()
@@ -170,10 +201,10 @@ class ProgrammingDiaryGenerator:
                 if credentials:
                     self.default_model = credentials.get('model', self.ai_client.default_model)
 
-                return self.generate_diary(since_date, until_date, days, author, max_count)
+                return self.generate_diary(since_date, until_date, days, author, max_count, use_github)
             else:
                 raise Exception(f"プロバイダーエラー (フォールバック不可): {original_error}")
 
         except Exception as fallback_error:
             raise Exception(
-                f"プログラミング日誌の生成に失敗しました。\n元のエラー: {original_error}\nフォールバックエラー: {fallback_error}")
+                f"プログラミング日記の生成に失敗しました。\n元のエラー: {original_error}\nフォールバックエラー: {fallback_error}")

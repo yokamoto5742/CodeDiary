@@ -61,3 +61,14 @@ class ProgressWidget(ttk.Label):
     def set_error_message(self, error_message: str):
         self._stop_timer()
         self.set_message(f"Google Form入力エラー: {error_message}")
+
+    def start_progress(self, message: str):
+        """プログレス開始"""
+        self.set_message(message)
+        self.start_time = time.time()
+        self._start_timer()
+
+    def stop_progress(self):
+        """プログレス停止"""
+        self._stop_timer()
+        self.clear_message()
