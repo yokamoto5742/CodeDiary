@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 それぞれアルファベット順に並べます。importが先でfromは後です。
 
 ## Automatic Notifications (Hooks)
-自動通知は`.claude/settings.local.json` で設定済：
+自動通知は`.claude/settings.local.json` で設定済。サブエージェントが作業を完了したときも通知する。：
 - **Stop Hook**: ユーザーがClaude Codeを停止した時に「作業が完了しました」と通知
 - **SessionEnd Hook**: セッション終了時に「Claude Code セッションが終了しました」と通知
 
