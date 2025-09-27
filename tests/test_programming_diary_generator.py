@@ -197,10 +197,10 @@ print("コードブロック")
         # モックの準備
         mock_get_repo_name.return_value = "TestProject"
         mock_template = "テスト用プロンプトテンプレート"
-        
+
         with patch.object(generator, '_load_prompt_template', return_value=mock_template):
             # テスト実行
-            result, input_tokens, output_tokens = generator.generate_diary(
+            result, input_tokens, output_tokens, model_name = generator.generate_diary(
                 since_date="2024-01-01",
                 until_date="2024-01-02"
             )
@@ -209,6 +209,7 @@ print("コードブロック")
         assert "TestProject" in result
         assert input_tokens == 100
         assert output_tokens == 200
+        assert model_name == 'test-model'
         mock_ai_client.initialize.assert_called_once()
         mock_ai_client._generate_content.assert_called_once()
         mock_git_service.get_commit_history.assert_called_once_with(
@@ -221,24 +222,25 @@ print("コードブロック")
     def test_generate_diary_with_days_parameter(self, generator, mock_git_service, mock_ai_client):
         """days パラメータを使用した日誌生成のテスト"""
         mock_template = "テスト用プロンプトテンプレート"
-        
+
         # 固定日時でテスト
         fixed_datetime = datetime(2024, 1, 15, 10, 30, 0, tzinfo=timezone(timedelta(hours=9)))
-        
+
         with patch.object(generator, '_load_prompt_template', return_value=mock_template), \
              patch('service.programming_diary_generator.datetime') as mock_datetime, \
              patch('service.programming_diary_generator.get_repository_directory_name', return_value="TestProject"):
-            
+
             mock_datetime.now.return_value = fixed_datetime
-            
+
             # テスト実行
-            result, input_tokens, output_tokens = generator.generate_diary(days=7)
+            result, input_tokens, output_tokens, model_name = generator.generate_diary(days=7)
 
         # 検証
         mock_git_service.get_commit_history.assert_called_once()
         call_args = mock_git_service.get_commit_history.call_args
         assert call_args[1]['since_date'] == "2024-01-08"  # 7日前
         assert call_args[1]['until_date'] == "2024-01-16"   # 翌日
+        assert model_name == 'test-model'
 
     @patch('service.programming_diary_generator.get_repository_directory_name')
     def test_generate_diary_repository_name_error(self, mock_get_repo_name, generator, mock_ai_client):
@@ -246,15 +248,16 @@ print("コードブロック")
         # モックの準備
         mock_get_repo_name.side_effect = Exception("Repository name error")
         mock_template = "テスト用プロンプトテンプレート"
-        
+
         with patch.object(generator, '_load_prompt_template', return_value=mock_template):
             # テスト実行（エラーは内部でキャッチされる）
-            result, input_tokens, output_tokens = generator.generate_diary()
+            result, input_tokens, output_tokens, model_name = generator.generate_diary()
 
         # プロジェクト名なしでも結果が返されることを確認
         assert result is not None
         assert input_tokens == 100
         assert output_tokens == 200
+        assert model_name == 'test-model'
 
     def test_generate_diary_ai_client_error(self, generator, mock_ai_client):
         """AIクライアントエラー時のテスト"""
@@ -274,13 +277,13 @@ print("コードブロック")
         mock_fallback_client = Mock()
         mock_fallback_client.default_model = 'fallback-model'
         mock_fallback_client._generate_content.return_value = ("fallback diary", 50, 100)
-        
+
         with patch('service.programming_diary_generator.get_ai_provider_config', return_value={'fallback_provider': 'openai'}), \
              patch('service.programming_diary_generator.get_available_providers', return_value={'openai': True}), \
              patch('service.programming_diary_generator.APIFactory.create_client', return_value=mock_fallback_client), \
              patch('service.programming_diary_generator.get_provider_credentials', return_value={'model': 'fallback-model'}), \
-             patch.object(generator, 'generate_diary', return_value=("fallback diary", 50, 100)):
-            
+             patch.object(generator, 'generate_diary', return_value=("fallback diary", 50, 100, "fallback-model")):
+
             result = generator._try_fallback_provider(
                 since_date="2024-01-01",
                 until_date="2024-01-02",
@@ -289,8 +292,8 @@ print("コードブロック")
                 max_count=None,
                 original_error="Original error"
             )
-            
-            assert result == ("fallback diary", 50, 100)
+
+            assert result == ("fallback diary", 50, 100, "fallback-model")
 
     def test_try_fallback_provider_no_fallback_available(self, generator):
         """フォールバックプロバイダーが利用できない場合のテスト"""
@@ -312,8 +315,8 @@ print("コードブロック")
         with patch('service.programming_diary_generator.get_ai_provider_config', return_value={'fallback_provider': 'openai'}), \
              patch('service.programming_diary_generator.get_available_providers', return_value={'openai': True}), \
              patch('service.programming_diary_generator.APIFactory.create_client', side_effect=Exception("Fallback creation error")):
-            
-            with pytest.raises(Exception, match="プログラミング日誌の生成に失敗しました"):
+
+            with pytest.raises(Exception, match="プログラミング日記の生成に失敗しました"):
                 generator._try_fallback_provider(
                     since_date="2024-01-01",
                     until_date="2024-01-02",
