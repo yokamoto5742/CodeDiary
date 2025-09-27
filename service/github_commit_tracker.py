@@ -79,7 +79,7 @@ class GitHubCommitTracker:
             response = requests.get(url, headers=self.headers, params=params, timeout=30)
 
             if response.status_code == 404:
-                return []  # リポジトリが見つからないまたはアクセス権限がない
+                return []
             elif response.status_code != 200:
                 print(f"リポジトリ {repo_name} のコミット取得エラー: {response.status_code}")
                 return []
@@ -179,7 +179,6 @@ class GitHubCommitTracker:
 
     def get_commits_for_repo_by_date_range(self, repo_name: str, since_date: str, until_date: str) -> List[
         Dict[str, Any]]:
-        """日付範囲でコミットを取得"""
         try:
             since_datetime = datetime.strptime(since_date, '%Y-%m-%d').date()
             until_datetime = datetime.strptime(until_date, '%Y-%m-%d').date()
@@ -209,7 +208,6 @@ class GitHubCommitTracker:
             return []
 
     def get_all_commits_by_date_range(self, since_date: str, until_date: str) -> Dict[str, List[Dict[str, Any]]]:
-        """日付範囲で全リポジトリのコミットを取得"""
         repos = self.get_user_repositories()
         all_commits = {}
 
@@ -229,9 +227,7 @@ class GitHubCommitTracker:
         return all_commits
 
     def get_commits_for_diary_generation_range(self, since_date: str, until_date: str = None) -> List[Dict[str, Any]]:
-        """日誌生成用に日付範囲のコミットを取得"""
         if until_date is None:
-            # 既存のメソッドを使用（単一日付）
             return self.get_commits_for_diary_generation(since_date)
 
         commits_by_repo = self.get_all_commits_by_date_range(since_date, until_date)
@@ -259,4 +255,3 @@ class GitHubCommitTracker:
 
         formatted_commits.sort(key=lambda x: x['timestamp'], reverse=True)
         return formatted_commits
-
