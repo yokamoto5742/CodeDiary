@@ -4,12 +4,8 @@ from typing import Dict, List, Any
 
 import requests
 
-from utils.config_manager import load_config
-
-
-from datetime import timezone
-
 from service.git_commit_history import BaseCommitService
+
 
 class GitHubCommitTracker(BaseCommitService):
     def __init__(self, token: str = None, username: str = None):

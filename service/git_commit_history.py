@@ -8,14 +8,11 @@ from utils.config_manager import load_config
 
 
 class BaseCommitService(ABC):
-    """共通のコミット処理機能を提供する基底クラス"""
-
     def __init__(self):
         self.config = load_config()
         self.jst = timezone(timedelta(hours=9))
     
     def _convert_utc_to_jst(self, timestamp_utc: str) -> str:
-        """UTC タイムスタンプを JST に変換"""
         try:
             dt_utc = datetime.fromisoformat(timestamp_utc.replace('Z', '+00:00'))
             dt_jst = dt_utc.astimezone(self.jst)
@@ -38,7 +35,6 @@ class BaseCommitService(ABC):
         return formatted_data
     
     def _get_subprocess_kwargs(self):
-        """subprocess の共通設定を取得"""
         kwargs = {
             'capture_output': True,
             'text': True,
