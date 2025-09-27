@@ -6,6 +6,7 @@ import pytest
 import requests
 
 from service.github_commit_tracker import GitHubCommitTracker
+from service.git_commit_history import BaseCommitService
 
 
 class TestGitHubCommitTracker:

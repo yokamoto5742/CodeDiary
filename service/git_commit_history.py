@@ -1,16 +1,59 @@
 import os
 import subprocess
+from abc import ABC
 from datetime import datetime, timedelta, timezone
 from typing import List, Dict
 
 from utils.config_manager import load_config
 
 
-class GitCommitHistoryService:
+class BaseCommitService(ABC):
+    """共通のコミット処理機能を提供する基底クラス"""
+
     def __init__(self):
         self.config = load_config()
-        self.repository_path = self._get_repository_path()
         self.jst = timezone(timedelta(hours=9))
+    
+    def _convert_utc_to_jst(self, timestamp_utc: str) -> str:
+        """UTC タイムスタンプを JST に変換"""
+        try:
+            dt_utc = datetime.fromisoformat(timestamp_utc.replace('Z', '+00:00'))
+            dt_jst = dt_utc.astimezone(self.jst)
+            return dt_jst.isoformat()
+        except ValueError:
+            return timestamp_utc
+    
+    def _format_commit_data(self, hash_val: str, author_name: str, author_email: str, 
+                           timestamp: str, message: str, repository: str = None) -> Dict:
+        """コミットデータを共通フォーマットで整形"""
+        formatted_data = {
+            'hash': hash_val,
+            'author_name': author_name,
+            'author_email': author_email,
+            'timestamp': self._convert_utc_to_jst(timestamp),
+            'message': message
+        }
+        if repository:
+            formatted_data['repository'] = repository
+        return formatted_data
+    
+    def _get_subprocess_kwargs(self):
+        """subprocess の共通設定を取得"""
+        kwargs = {
+            'capture_output': True,
+            'text': True,
+            'encoding': 'utf-8'
+        }
+        
+        if os.name == 'nt':
+            kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
+        
+        return kwargs
+
+class GitCommitHistoryService(BaseCommitService):
+    def __init__(self):
+        super().__init__()
+        self.repository_path = self._get_repository_path()
 
     def _get_repository_path(self) -> str:
         try:
@@ -26,18 +69,6 @@ class GitCommitHistoryService:
             return repo_path
         except Exception as e:
             raise Exception(f"リポジトリパスの取得に失敗しました: {e}")
-
-    def _get_subprocess_kwargs(self):
-        kwargs = {
-            'capture_output': True,
-            'text': True,
-            'encoding': 'utf-8'
-        }
-
-        if os.name == 'nt':
-            kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
-
-        return kwargs
 
     def get_commit_history(self,
                            since_date: str = None,
@@ -72,21 +103,13 @@ class GitCommitHistoryService:
                 if line:
                     parts = line.split('|')
                     if len(parts) >= 5:
-                        timestamp_utc = parts[3]
-                        try:
-                            dt_utc = datetime.fromisoformat(timestamp_utc.replace('Z', '+00:00'))
-                            dt_jst = dt_utc.astimezone(self.jst)
-                            timestamp_jst = dt_jst.isoformat()
-                        except ValueError:
-                            timestamp_jst = timestamp_utc
-
-                        commits.append({
-                            'hash': parts[0],
-                            'author_name': parts[1],
-                            'author_email': parts[2],
-                            'timestamp': timestamp_jst,
-                            'message': '|'.join(parts[4:])
-                        })
+                        commits.append(self._format_commit_data(
+                            hash_val=parts[0],
+                            author_name=parts[1],
+                            author_email=parts[2],
+                            timestamp=parts[3],
+                            message='|'.join(parts[4:])
+                        ))
 
             return commits
 

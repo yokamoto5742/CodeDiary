@@ -7,9 +7,13 @@ import requests
 from utils.config_manager import load_config
 
 
-class GitHubCommitTracker:
+from datetime import timezone
+
+from service.git_commit_history import BaseCommitService
+
+class GitHubCommitTracker(BaseCommitService):
     def __init__(self, token: str = None, username: str = None):
-        self.config = load_config()
+        super().__init__()
         self.token = token or os.getenv('GITHUB_TOKEN')
         self.username = username or os.getenv('GITHUB_USERNAME')
 
@@ -154,20 +158,14 @@ class GitHubCommitTracker:
         for repo_name, commits in commits_by_repo.items():
             for commit in commits:
                 try:
-                    timestamp_iso = commit['commit']['author']['date']
-
-                    dt_utc = datetime.fromisoformat(timestamp_iso.replace('Z', '+00:00'))
-                    dt_jst = dt_utc.astimezone(datetime.now().astimezone().tzinfo)
-                    timestamp_jst = dt_jst.isoformat()
-
-                    formatted_commits.append({
-                        'hash': commit['sha'],
-                        'author_name': commit['commit']['author']['name'],
-                        'author_email': commit['commit']['author']['email'],
-                        'timestamp': timestamp_jst,
-                        'message': f"[{repo_name}] {commit['commit']['message']}",
-                        'repository': repo_name
-                    })
+                    formatted_commits.append(self._format_commit_data(
+                        hash_val=commit['sha'],
+                        author_name=commit['commit']['author']['name'],
+                        author_email=commit['commit']['author']['email'],
+                        timestamp=commit['commit']['author']['date'],
+                        message=f"[{repo_name}] {commit['commit']['message']}",
+                        repository=repo_name
+                    ))
 
                 except (KeyError, ValueError) as e:
                     print(f"コミット情報の変換でエラー: {e}")
@@ -236,19 +234,14 @@ class GitHubCommitTracker:
         for repo_name, commits in commits_by_repo.items():
             for commit in commits:
                 try:
-                    timestamp_iso = commit['commit']['author']['date']
-                    dt_utc = datetime.fromisoformat(timestamp_iso.replace('Z', '+00:00'))
-                    dt_jst = dt_utc.astimezone(datetime.now().astimezone().tzinfo)
-                    timestamp_jst = dt_jst.isoformat()
-
-                    formatted_commits.append({
-                        'hash': commit['sha'],
-                        'author_name': commit['commit']['author']['name'],
-                        'author_email': commit['commit']['author']['email'],
-                        'timestamp': timestamp_jst,
-                        'message': f"[{repo_name}] {commit['commit']['message']}",
-                        'repository': repo_name
-                    })
+                    formatted_commits.append(self._format_commit_data(
+                        hash_val=commit['sha'],
+                        author_name=commit['commit']['author']['name'],
+                        author_email=commit['commit']['author']['email'],
+                        timestamp=commit['commit']['author']['date'],
+                        message=f"[{repo_name}] {commit['commit']['message']}",
+                        repository=repo_name
+                    ))
                 except (KeyError, ValueError) as e:
                     print(f"コミット情報の変換でエラー: {e}")
                     continue

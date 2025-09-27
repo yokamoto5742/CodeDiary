@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch, MagicMock
 
 import pytest
 
-from service.git_commit_history import GitCommitHistoryService
+from service.git_commit_history import GitCommitHistoryService, BaseCommitService
 
 
 class TestGitCommitHistoryService:
