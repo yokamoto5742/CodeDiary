@@ -5,6 +5,7 @@ from typing import List, Dict, Optional, Tuple
 
 from external_service.api_factory import APIFactory
 from service.git_commit_history import GitCommitHistoryService
+from service.github_commit_tracker import GitHubCommitTracker
 from utils.config_manager import get_active_provider, get_provider_credentials, load_config,get_ai_provider_config, get_available_providers
 from utils.env_loader import load_environment_variables
 from utils.repository_name_extractor import get_repository_directory_name
@@ -97,6 +98,30 @@ class ProgrammingDiaryGenerator:
 
         return plain_text.strip()
 
+    def _try_fallback_provider(self, since_date, until_date, days, author, max_count, original_error, use_github=False):
+        try:
+            config = get_ai_provider_config()
+            available_providers = get_available_providers()
+            fallback_provider = config.get('fallback_provider')
+
+            if fallback_provider and available_providers.get(fallback_provider, False):
+                print(
+                    f"⚠️ メインプロバイダーでエラーが発生しました。フォールバックプロバイダー '{fallback_provider}' を試行します...")
+
+                self.ai_provider = fallback_provider
+                self.ai_client = APIFactory.create_client(fallback_provider)
+                credentials = get_provider_credentials(fallback_provider)
+                if credentials:
+                    self.default_model = credentials.get('model', self.ai_client.default_model)
+
+                return self.generate_diary(since_date, until_date, days, author, max_count, use_github)
+            else:
+                raise Exception(f"プロバイダーエラー (フォールバック不可): {original_error}")
+
+        except Exception as fallback_error:
+            raise Exception(
+                f"プログラミング日記の生成に失敗しました。\n元のエラー: {original_error}\nフォールバックエラー: {fallback_error}")
+
     def generate_diary(self,
                        since_date: Optional[str] = None,
                        until_date: Optional[str] = None,
@@ -117,13 +142,11 @@ class ProgrammingDiaryGenerator:
 
             if use_github:
                 print(f"   データソース: GitHub API (複数リポジトリ)")
-                from service.github_commit_tracker import GitHubCommitTracker
 
                 try:
                     github_tracker = GitHubCommitTracker()
                     print(f"   GitHubユーザー: {github_tracker.username}")
 
-                    # 日付範囲をサポート
                     if since_date and until_date:
                         commits = github_tracker.get_commits_for_diary_generation_range(since_date, until_date)
                         print(f"   検索期間: {since_date} から {until_date}")
@@ -131,7 +154,6 @@ class ProgrammingDiaryGenerator:
                         commits = github_tracker.get_commits_for_diary_generation(since_date)
                         print(f"   検索期間: {since_date}")
                     else:
-                        # 今日のコミットを取得
                         today = datetime.now().strftime('%Y-%m-%d')
                         commits = github_tracker.get_commits_for_diary_generation(today)
                         print(f"   検索期間: {today}")
@@ -140,7 +162,7 @@ class ProgrammingDiaryGenerator:
                     print(f"   GitHub APIエラー: {e}")
                     print(f"   ローカルGitリポジトリにフォールバック")
                     use_github = False
-            
+
             if not use_github:
                 print(f"   データソース: ローカルGitリポジトリ")
                 print(f"   リポジトリパス: {self.git_service.repository_path}")
@@ -172,7 +194,6 @@ class ProgrammingDiaryGenerator:
 
             try:
                 if use_github:
-                    from service.github_commit_tracker import GitHubCommitTracker
                     github_tracker = GitHubCommitTracker()
                     project_name = f"GitHub Account: {github_tracker.username}"
                 else:
@@ -188,27 +209,3 @@ class ProgrammingDiaryGenerator:
             return self._try_fallback_provider(
                 since_date, until_date, days, author, max_count, str(e), use_github
             )
-
-    def _try_fallback_provider(self, since_date, until_date, days, author, max_count, original_error, use_github=False):
-        try:
-            config = get_ai_provider_config()
-            available_providers = get_available_providers()
-            fallback_provider = config.get('fallback_provider')
-
-            if fallback_provider and available_providers.get(fallback_provider, False):
-                print(
-                    f"⚠️ メインプロバイダーでエラーが発生しました。フォールバックプロバイダー '{fallback_provider}' を試行します...")
-
-                self.ai_provider = fallback_provider
-                self.ai_client = APIFactory.create_client(fallback_provider)
-                credentials = get_provider_credentials(fallback_provider)
-                if credentials:
-                    self.default_model = credentials.get('model', self.ai_client.default_model)
-
-                return self.generate_diary(since_date, until_date, days, author, max_count, use_github)
-            else:
-                raise Exception(f"プロバイダーエラー (フォールバック不可): {original_error}")
-
-        except Exception as fallback_error:
-            raise Exception(
-                f"プログラミング日記の生成に失敗しました。\n元のエラー: {original_error}\nフォールバックエラー: {fallback_error}")
