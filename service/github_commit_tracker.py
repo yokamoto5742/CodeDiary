@@ -1,4 +1,3 @@
-import json
 import os
 from datetime import datetime, timedelta
 from typing import Dict, List, Any
@@ -9,16 +8,7 @@ from utils.config_manager import load_config
 
 
 class GitHubCommitTracker:
-    """GitHubアカウント全体の今日のコミット履歴を取得するクラス"""
-
     def __init__(self, token: str = None, username: str = None):
-        """
-        初期化
-
-        Args:
-            token: GitHub Personal Access Token
-            username: GitHubユーザー名
-        """
         self.config = load_config()
         self.token = token or os.getenv('GITHUB_TOKEN')
         self.username = username or os.getenv('GITHUB_USERNAME')
@@ -33,7 +23,6 @@ class GitHubCommitTracker:
         self.base_url = 'https://api.github.com'
 
     def get_user_repositories(self) -> List[Dict[str, Any]]:
-        """ユーザーのすべてのリポジトリを取得"""
         repos = []
         page = 1
         per_page = 100
@@ -71,7 +60,6 @@ class GitHubCommitTracker:
         return repos
 
     def get_commits_for_repo_by_date(self, repo_name: str, target_date: str) -> List[Dict[str, Any]]:
-        """指定したリポジトリの指定日のコミットを取得"""
         try:
             target_datetime = datetime.strptime(target_date, '%Y-%m-%d').date()
         except ValueError:
@@ -103,7 +91,6 @@ class GitHubCommitTracker:
             return []
 
     def get_all_commits_by_date(self, target_date: str) -> Dict[str, List[Dict[str, Any]]]:
-        """すべてのリポジトリから指定日のコミットを取得"""
         repos = self.get_user_repositories()
         all_commits = {}
 
@@ -122,12 +109,10 @@ class GitHubCommitTracker:
         return all_commits
 
     def get_today_commits(self) -> Dict[str, List[Dict[str, Any]]]:
-        """今日のコミットを取得"""
         today = datetime.now().strftime('%Y-%m-%d')
         return self.get_all_commits_by_date(today)
 
     def format_commits_output(self, commits_by_repo: Dict[str, List[Dict[str, Any]]], target_date: str = None) -> str:
-        """コミット情報を整理して表示用文字列を生成"""
         if not commits_by_repo:
             date_str = target_date or "今日"
             return f"{date_str}のコミットはありません。"
@@ -163,19 +148,14 @@ class GitHubCommitTracker:
         return '\n'.join(output)
 
     def get_commits_for_diary_generation(self, target_date: str) -> List[Dict[str, Any]]:
-        """日記生成用のコミット情報を取得（GitCommitHistoryServiceと同じ形式）"""
         commits_by_repo = self.get_all_commits_by_date(target_date)
-
-        # GitCommitHistoryService.get_commit_history()と同じ形式に変換
         formatted_commits = []
 
         for repo_name, commits in commits_by_repo.items():
             for commit in commits:
                 try:
-                    # ISO形式の日時を取得
                     timestamp_iso = commit['commit']['author']['date']
 
-                    # JST変換
                     dt_utc = datetime.fromisoformat(timestamp_iso.replace('Z', '+00:00'))
                     dt_jst = dt_utc.astimezone(datetime.now().astimezone().tzinfo)
                     timestamp_jst = dt_jst.isoformat()
@@ -185,15 +165,14 @@ class GitHubCommitTracker:
                         'author_name': commit['commit']['author']['name'],
                         'author_email': commit['commit']['author']['email'],
                         'timestamp': timestamp_jst,
-                        'message': f"[{repo_name}] {commit['commit']['message']}",  # リポジトリ名を追加
-                        'repository': repo_name  # 追加情報
+                        'message': f"[{repo_name}] {commit['commit']['message']}",
+                        'repository': repo_name
                     })
 
                 except (KeyError, ValueError) as e:
                     print(f"コミット情報の変換でエラー: {e}")
                     continue
 
-        # 時刻順にソート（新しい順）
         formatted_commits.sort(key=lambda x: x['timestamp'], reverse=True)
 
         return formatted_commits
