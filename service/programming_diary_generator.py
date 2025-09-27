@@ -114,24 +114,28 @@ class ProgrammingDiaryGenerator:
             print(f"🔍 デバッグ情報:")
             print(f"   AIプロバイダー: {self.ai_provider}")
             print(f"   使用モデル: {self.default_model}")
-            
+
             if use_github:
                 print(f"   データソース: GitHub API (複数リポジトリ)")
                 from service.github_commit_tracker import GitHubCommitTracker
-                
+
                 try:
                     github_tracker = GitHubCommitTracker()
                     print(f"   GitHubユーザー: {github_tracker.username}")
-                    
-                    if since_date:
+
+                    # 日付範囲をサポート
+                    if since_date and until_date:
+                        commits = github_tracker.get_commits_for_diary_generation_range(since_date, until_date)
+                        print(f"   検索期間: {since_date} から {until_date}")
+                    elif since_date:
                         commits = github_tracker.get_commits_for_diary_generation(since_date)
+                        print(f"   検索期間: {since_date}")
                     else:
                         # 今日のコミットを取得
                         today = datetime.now().strftime('%Y-%m-%d')
                         commits = github_tracker.get_commits_for_diary_generation(today)
-                        
-                    print(f"   検索期間: {since_date or 'today'}")
-                    
+                        print(f"   検索期間: {today}")
+
                 except Exception as e:
                     print(f"   GitHub APIエラー: {e}")
                     print(f"   ローカルGitリポジトリにフォールバック")

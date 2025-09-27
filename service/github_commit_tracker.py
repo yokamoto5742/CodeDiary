@@ -176,3 +176,87 @@ class GitHubCommitTracker:
         formatted_commits.sort(key=lambda x: x['timestamp'], reverse=True)
 
         return formatted_commits
+
+    def get_commits_for_repo_by_date_range(self, repo_name: str, since_date: str, until_date: str) -> List[
+        Dict[str, Any]]:
+        """日付範囲でコミットを取得"""
+        try:
+            since_datetime = datetime.strptime(since_date, '%Y-%m-%d').date()
+            until_datetime = datetime.strptime(until_date, '%Y-%m-%d').date()
+        except ValueError:
+            raise ValueError(f"日付形式が不正です。YYYY-MM-DD形式で入力してください。")
+
+        since = datetime.combine(since_datetime, datetime.min.time()).isoformat() + 'Z'
+        until = datetime.combine(until_datetime + timedelta(days=1), datetime.min.time()).isoformat() + 'Z'
+
+        url = f'{self.base_url}/repos/{self.username}/{repo_name}/commits'
+        params = {
+            'author': self.username,
+            'since': since,
+            'until': until
+        }
+
+        try:
+            response = requests.get(url, headers=self.headers, params=params, timeout=30)
+            if response.status_code == 404:
+                return []
+            elif response.status_code != 200:
+                print(f"リポジトリ {repo_name} のコミット取得エラー: {response.status_code}")
+                return []
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"リポジトリ {repo_name} のコミット取得中にネットワークエラー: {e}")
+            return []
+
+    def get_all_commits_by_date_range(self, since_date: str, until_date: str) -> Dict[str, List[Dict[str, Any]]]:
+        """日付範囲で全リポジトリのコミットを取得"""
+        repos = self.get_user_repositories()
+        all_commits = {}
+
+        print(f"チェック対象リポジトリ数: {len(repos)}")
+        print(f"期間: {since_date} から {until_date}")
+
+        for repo in repos:
+            repo_name = repo['name']
+            print(f"チェック中: {repo_name}")
+
+            commits = self.get_commits_for_repo_by_date_range(repo_name, since_date, until_date)
+
+            if commits:
+                all_commits[repo_name] = commits
+                print(f"  → {len(commits)} 件のコミットが見つかりました")
+
+        return all_commits
+
+    def get_commits_for_diary_generation_range(self, since_date: str, until_date: str = None) -> List[Dict[str, Any]]:
+        """日誌生成用に日付範囲のコミットを取得"""
+        if until_date is None:
+            # 既存のメソッドを使用（単一日付）
+            return self.get_commits_for_diary_generation(since_date)
+
+        commits_by_repo = self.get_all_commits_by_date_range(since_date, until_date)
+        formatted_commits = []
+
+        for repo_name, commits in commits_by_repo.items():
+            for commit in commits:
+                try:
+                    timestamp_iso = commit['commit']['author']['date']
+                    dt_utc = datetime.fromisoformat(timestamp_iso.replace('Z', '+00:00'))
+                    dt_jst = dt_utc.astimezone(datetime.now().astimezone().tzinfo)
+                    timestamp_jst = dt_jst.isoformat()
+
+                    formatted_commits.append({
+                        'hash': commit['sha'],
+                        'author_name': commit['commit']['author']['name'],
+                        'author_email': commit['commit']['author']['email'],
+                        'timestamp': timestamp_jst,
+                        'message': f"[{repo_name}] {commit['commit']['message']}",
+                        'repository': repo_name
+                    })
+                except (KeyError, ValueError) as e:
+                    print(f"コミット情報の変換でエラー: {e}")
+                    continue
+
+        formatted_commits.sort(key=lambda x: x['timestamp'], reverse=True)
+        return formatted_commits
+
