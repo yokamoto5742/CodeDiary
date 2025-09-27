@@ -20,15 +20,14 @@ class ControlButtonsWidget(ttk.Frame):
     def _setup_ui(self):
         self.create_button = ttk.Button(
             self,
-            text="日記作成",
+            text="作成",
             command=self._on_create_diary
         )
         self.create_button.grid(row=0, column=0, padx=(0, 5))
 
-        # GitHub統合ボタンを追加
         self.github_button = ttk.Button(
             self,
-            text="GitHub連携日記作成",
+            text="GitHubから作成",
             command=self._on_create_github_diary
         )
         self.github_button.grid(row=0, column=1, padx=(0, 5))
