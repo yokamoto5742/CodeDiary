@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Any
 
 import requests
@@ -65,8 +65,14 @@ class GitHubCommitTracker(BaseCommitService):
         except ValueError:
             raise ValueError(f"日付形式が不正です: {target_date}。YYYY-MM-DD形式で入力してください。")
 
-        since = datetime.combine(target_datetime, datetime.min.time()).isoformat() + 'Z'
-        until = datetime.combine(target_datetime + timedelta(days=1), datetime.min.time()).isoformat() + 'Z'
+        # JSTの0時をUTCに変換（JST 0時 = UTC 前日15時）
+        jst = timezone(timedelta(hours=9))
+        since_jst = datetime.combine(target_datetime, datetime.min.time()).replace(tzinfo=jst)
+        until_jst = datetime.combine(target_datetime + timedelta(days=1), datetime.min.time()).replace(tzinfo=jst)
+
+        # UTCに変換してISO形式にする
+        since = since_jst.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
+        until = until_jst.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
 
         url = f'{self.base_url}/repos/{self.username}/{repo_name}/commits'
         params = {
@@ -179,8 +185,14 @@ class GitHubCommitTracker(BaseCommitService):
         except ValueError:
             raise ValueError(f"日付形式が不正です。YYYY-MM-DD形式で入力してください。")
 
-        since = datetime.combine(since_datetime, datetime.min.time()).isoformat() + 'Z'
-        until = datetime.combine(until_datetime + timedelta(days=1), datetime.min.time()).isoformat() + 'Z'
+        # JSTの0時をUTCに変換（JST 0時 = UTC 前日15時）
+        jst = timezone(timedelta(hours=9))
+        since_jst = datetime.combine(since_datetime, datetime.min.time()).replace(tzinfo=jst)
+        until_jst = datetime.combine(until_datetime + timedelta(days=1), datetime.min.time()).replace(tzinfo=jst)
+
+        # UTCに変換してISO形式にする
+        since = since_jst.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
+        until = until_jst.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
 
         url = f'{self.base_url}/repos/{self.username}/{repo_name}/commits'
         params = {

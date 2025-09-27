@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock, patch, mock_open
 
 import pytest
@@ -74,42 +74,37 @@ class TestGitHubCommitTracker:
     def tracker(self, mock_env_vars, mock_config):
         """GitHubCommitTrackerインスタンス"""
         with patch.dict(os.environ, mock_env_vars):
-            with patch('service.github_commit_tracker.load_config', return_value=mock_config):
-                return GitHubCommitTracker()
+            return GitHubCommitTracker()
 
     def test_init_with_environment_variables(self, mock_env_vars, mock_config):
         """環境変数からの初期化テスト"""
         with patch.dict(os.environ, mock_env_vars):
-            with patch('service.github_commit_tracker.load_config', return_value=mock_config):
-                tracker = GitHubCommitTracker()
+            tracker = GitHubCommitTracker()
 
-                assert tracker.token == 'test_token_123'
-                assert tracker.username == 'test_user'
-                assert tracker.headers['Authorization'] == 'token test_token_123'
-                assert tracker.base_url == 'https://api.github.com'
+            assert tracker.token == 'test_token_123'
+            assert tracker.username == 'test_user'
+            assert tracker.headers['Authorization'] == 'token test_token_123'
+            assert tracker.base_url == 'https://api.github.com'
 
     def test_init_with_parameters(self, mock_config):
         """パラメータでの初期化テスト"""
-        with patch('service.github_commit_tracker.load_config', return_value=mock_config):
-            tracker = GitHubCommitTracker(token='custom_token', username='custom_user')
+        tracker = GitHubCommitTracker(token='custom_token', username='custom_user')
 
-            assert tracker.token == 'custom_token'
-            assert tracker.username == 'custom_user'
-            assert tracker.headers['Authorization'] == 'token custom_token'
+        assert tracker.token == 'custom_token'
+        assert tracker.username == 'custom_user'
+        assert tracker.headers['Authorization'] == 'token custom_token'
 
     def test_init_missing_token_raises_error(self, mock_config):
         """トークンが設定されていない場合のエラーテスト"""
         with patch.dict(os.environ, {}, clear=True):
-            with patch('service.github_commit_tracker.load_config', return_value=mock_config):
-                with pytest.raises(ValueError, match="GitHub TokenとUsernameが設定されていません"):
-                    GitHubCommitTracker()
+            with pytest.raises(ValueError, match="GitHub TokenとUsernameが設定されていません"):
+                GitHubCommitTracker()
 
     def test_init_missing_username_raises_error(self, mock_config):
         """ユーザー名が設定されていない場合のエラーテスト"""
         with patch.dict(os.environ, {'GITHUB_TOKEN': 'token'}, clear=True):
-            with patch('service.github_commit_tracker.load_config', return_value=mock_config):
-                with pytest.raises(ValueError, match="GitHub TokenとUsernameが設定されていません"):
-                    GitHubCommitTracker()
+            with pytest.raises(ValueError, match="GitHub TokenとUsernameが設定されていません"):
+                GitHubCommitTracker()
 
     @patch('requests.get')
     def test_get_user_repositories_success(self, mock_get, tracker, sample_repo_data):
@@ -193,8 +188,9 @@ class TestGitHubCommitTracker:
         mock_get.assert_called_once()
         args, kwargs = mock_get.call_args
         assert 'test_user/test-repo/commits' in args[0]
-        assert kwargs['params']['since'] == '2024-01-15T00:00:00Z'
-        assert kwargs['params']['until'] == '2024-01-16T00:00:00Z'
+        # JST 0時をUTCに変換（JST 0時 = UTC 前日15時）
+        assert kwargs['params']['since'] == '2024-01-14T15:00:00Z'
+        assert kwargs['params']['until'] == '2024-01-15T15:00:00Z'
 
     def test_get_commits_for_repo_by_date_invalid_date(self, tracker):
         """無効な日付形式のテスト"""
@@ -340,8 +336,9 @@ class TestGitHubCommitTracker:
 
         mock_get.assert_called_once()
         args, kwargs = mock_get.call_args
-        assert kwargs['params']['since'] == '2024-01-15T00:00:00Z'
-        assert kwargs['params']['until'] == '2024-01-17T00:00:00Z'
+        # JST 0時をUTCに変換（JST 0時 = UTC 前日15時）
+        assert kwargs['params']['since'] == '2024-01-14T15:00:00Z'
+        assert kwargs['params']['until'] == '2024-01-16T15:00:00Z'
 
     def test_get_commits_for_repo_by_date_range_invalid_date(self, tracker):
         """無効な日付範囲のテスト"""

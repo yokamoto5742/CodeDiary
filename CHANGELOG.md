@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] - 2025-09-28
+
+### Fixed
+- **タイムゾーン処理の修正**: `GitHubCommitTracker`のJST→UTC変換処理を改善
+  - `get_commits_for_repo_by_date`メソッド: JST 0時をUTC 15時（前日）に正確に変換
+  - `get_commits_for_repo_by_date_range`メソッド: 日付範囲指定時のタイムゾーン変換を修正
+  - GitHub API の`since`/`until`パラメータでJST日付が正しく処理されるよう改善
+
+### Enhanced
+- **テストスイート更新**: タイムゾーン変換に対応したテストケースの修正
+  - 期待値をJST→UTC変換後の正しい値に更新
+  - 不要な`load_config`パッチを削除してテスト安定性を向上
+  - 全92テストケースが引き続き成功
+
+### Technical
+- インポート文に`timezone`クラスを追加
+- JST（UTC+9）からUTCへの変換ロジックを明示的に実装
+- GitHub API 日付パラメータの正確性を保証
+
 ## [1.0.5] - 2025-09-27
 
 ### Added
