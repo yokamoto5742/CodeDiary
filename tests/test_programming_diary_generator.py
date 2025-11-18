@@ -42,7 +42,7 @@ class TestProgrammingDiaryGenerator:
         mock_client = Mock()
         mock_client.default_model = 'test-model'
         mock_client.initialize.return_value = True
-        mock_client._generate_content.return_value = (
+        mock_client.generate_content.return_value = (
             "# テスト日誌\n\n**機能追加**\n- 初期コミット実装",
             100,  # input_tokens
             200   # output_tokens
@@ -211,12 +211,10 @@ print("コードブロック")
         assert output_tokens == 200
         assert model_name == 'test-model'
         mock_ai_client.initialize.assert_called_once()
-        mock_ai_client._generate_content.assert_called_once()
+        mock_ai_client.generate_content.assert_called_once()
         mock_git_service.get_commit_history.assert_called_once_with(
             since_date="2024-01-01",
-            until_date="2024-01-02",
-            author=None,
-            max_count=None
+            until_date="2024-01-02"
         )
 
     def test_generate_diary_with_days_parameter(self, generator, mock_git_service, mock_ai_client):
@@ -276,7 +274,7 @@ print("コードブロック")
         """フォールバックプロバイダーの正常系テスト"""
         mock_fallback_client = Mock()
         mock_fallback_client.default_model = 'fallback-model'
-        mock_fallback_client._generate_content.return_value = ("fallback diary", 50, 100)
+        mock_fallback_client.generate_content.return_value = ("fallback diary", 50, 100)
 
         with patch('service.programming_diary_generator.get_ai_provider_config', return_value={'fallback_provider': 'openai'}), \
              patch('service.programming_diary_generator.get_available_providers', return_value={'openai': True}), \
@@ -288,8 +286,6 @@ print("コードブロック")
                 since_date="2024-01-01",
                 until_date="2024-01-02",
                 days=None,
-                author=None,
-                max_count=None,
                 original_error="Original error"
             )
 
@@ -305,8 +301,6 @@ print("コードブロック")
                     since_date="2024-01-01",
                     until_date="2024-01-02",
                     days=None,
-                    author=None,
-                    max_count=None,
                     original_error="Original error"
                 )
 
@@ -321,7 +315,5 @@ print("コードブロック")
                     since_date="2024-01-01",
                     until_date="2024-01-02",
                     days=None,
-                    author=None,
-                    max_count=None,
                     original_error="Original error"
                 )

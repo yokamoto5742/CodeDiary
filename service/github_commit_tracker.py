@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple
 
 import requests
 
@@ -21,6 +21,19 @@ class GitHubCommitTracker(BaseCommitService):
             'Accept': 'application/vnd.github.v3+json'
         }
         self.base_url = 'https://api.github.com'
+
+    def _convert_date_to_utc_range(self, start_date: str, end_date: str = None) -> Tuple[str, str]:
+        """日付文字列をUTC ISO形式の範囲に変換"""
+        start = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end = datetime.strptime(end_date or start_date, '%Y-%m-%d').date()
+
+        since_jst = datetime.combine(start, datetime.min.time()).replace(tzinfo=self.jst)
+        until_jst = datetime.combine(end + timedelta(days=1), datetime.min.time()).replace(tzinfo=self.jst)
+
+        return (
+            since_jst.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z'),
+            until_jst.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
+        )
 
     def get_user_repositories(self) -> List[Dict[str, Any]]:
         repos = []
@@ -61,18 +74,9 @@ class GitHubCommitTracker(BaseCommitService):
 
     def get_commits_for_repo_by_date(self, repo_name: str, target_date: str) -> List[Dict[str, Any]]:
         try:
-            target_datetime = datetime.strptime(target_date, '%Y-%m-%d').date()
+            since, until = self._convert_date_to_utc_range(target_date)
         except ValueError:
             raise ValueError(f"日付形式が不正です: {target_date}。YYYY-MM-DD形式で入力してください。")
-
-        # JSTの0時をUTCに変換（JST 0時 = UTC 前日15時）
-        jst = timezone(timedelta(hours=9))
-        since_jst = datetime.combine(target_datetime, datetime.min.time()).replace(tzinfo=jst)
-        until_jst = datetime.combine(target_datetime + timedelta(days=1), datetime.min.time()).replace(tzinfo=jst)
-
-        # UTCに変換してISO形式にする
-        since = since_jst.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
-        until = until_jst.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
 
         url = f'{self.base_url}/repos/{self.username}/{repo_name}/commits'
         params = {
@@ -180,19 +184,9 @@ class GitHubCommitTracker(BaseCommitService):
     def get_commits_for_repo_by_date_range(self, repo_name: str, since_date: str, until_date: str) -> List[
         Dict[str, Any]]:
         try:
-            since_datetime = datetime.strptime(since_date, '%Y-%m-%d').date()
-            until_datetime = datetime.strptime(until_date, '%Y-%m-%d').date()
+            since, until = self._convert_date_to_utc_range(since_date, until_date)
         except ValueError:
             raise ValueError(f"日付形式が不正です。YYYY-MM-DD形式で入力してください。")
-
-        # JSTの0時をUTCに変換（JST 0時 = UTC 前日15時）
-        jst = timezone(timedelta(hours=9))
-        since_jst = datetime.combine(since_datetime, datetime.min.time()).replace(tzinfo=jst)
-        until_jst = datetime.combine(until_datetime + timedelta(days=1), datetime.min.time()).replace(tzinfo=jst)
-
-        # UTCに変換してISO形式にする
-        since = since_jst.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
-        until = until_jst.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
 
         url = f'{self.base_url}/repos/{self.username}/{repo_name}/commits'
         params = {

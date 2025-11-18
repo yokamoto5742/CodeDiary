@@ -98,7 +98,7 @@ class ProgrammingDiaryGenerator:
 
         return plain_text.strip()
 
-    def _try_fallback_provider(self, since_date, until_date, days, author, max_count, original_error, use_github=False):
+    def _try_fallback_provider(self, since_date, until_date, days, original_error, use_github=False):
         try:
             config = get_ai_provider_config()
             available_providers = get_available_providers()
@@ -114,7 +114,7 @@ class ProgrammingDiaryGenerator:
                 if credentials:
                     self.default_model = credentials.get('model', self.ai_client.default_model)
 
-                return self.generate_diary(since_date, until_date, days, author, max_count, use_github)
+                return self.generate_diary(since_date, until_date, days, use_github)
             else:
                 raise Exception(f"プロバイダーエラー (フォールバック不可): {original_error}")
 
@@ -126,8 +126,6 @@ class ProgrammingDiaryGenerator:
                        since_date: Optional[str] = None,
                        until_date: Optional[str] = None,
                        days: Optional[int] = None,
-                       author: Optional[str] = None,
-                       max_count: Optional[int] = None,
                        use_github: bool = False) -> Tuple[str, int, int, str]:
         try:
             self.ai_client.initialize()
@@ -140,6 +138,7 @@ class ProgrammingDiaryGenerator:
             print(f"   AIプロバイダー: {self.ai_provider}")
             print(f"   使用モデル: {self.default_model}")
 
+            github_tracker = None
             if use_github:
                 print(f"   データソース: GitHub API (複数リポジトリ)")
 
@@ -174,9 +173,7 @@ class ProgrammingDiaryGenerator:
 
                 commits = self.git_service.get_commit_history(
                     since_date=since_date,
-                    until_date=until_date,
-                    author=author,
-                    max_count=max_count
+                    until_date=until_date
                 )
 
             print(f"   取得したコミット数: {len(commits)}")
@@ -185,7 +182,7 @@ class ProgrammingDiaryGenerator:
             formatted_commits = self._format_commits_for_prompt(commits)
             full_prompt = f"{prompt_template}\n\n## Git コミット履歴\n\n{formatted_commits}"
 
-            diary_content, input_tokens, output_tokens = self.ai_client._generate_content(
+            diary_content, input_tokens, output_tokens = self.ai_client.generate_content(
                 prompt=full_prompt,
                 model_name=self.default_model
             )
@@ -193,8 +190,7 @@ class ProgrammingDiaryGenerator:
             plain_diary = self._convert_markdown_to_plain_text(diary_content)
 
             try:
-                if use_github:
-                    github_tracker = GitHubCommitTracker()
+                if use_github and github_tracker:
                     project_name = f"GitHub Account: {github_tracker.username}"
                 else:
                     project_name = get_repository_directory_name()
@@ -207,5 +203,5 @@ class ProgrammingDiaryGenerator:
 
         except Exception as e:
             return self._try_fallback_provider(
-                since_date, until_date, days, author, max_count, str(e), use_github
+                since_date, until_date, days, str(e), use_github
             )

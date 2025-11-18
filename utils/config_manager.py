@@ -20,6 +20,8 @@ def get_config_path():
 
 CONFIG_PATH = get_config_path()
 
+_cached_config = None
+
 
 def load_environment_variables():
     current_dir = Path(__file__).parent.parent
@@ -34,24 +36,29 @@ def load_environment_variables():
 load_environment_variables()
 
 
-def load_config() -> configparser.ConfigParser:
-    config = configparser.ConfigParser()
-    try:
-        with open(CONFIG_PATH, encoding='utf-8') as f:
-            config.read_file(f)
-    except FileNotFoundError:
-        print(f"設定ファイルが見つかりません: {CONFIG_PATH}")
-        raise
-    except configparser.Error as e:
-        print(f"設定ファイルの解析中にエラーが発生しました: {e}")
-        raise
-    return config
+def load_config(force_reload: bool = False) -> configparser.ConfigParser:
+    global _cached_config
+    if _cached_config is None or force_reload:
+        config = configparser.ConfigParser()
+        try:
+            with open(CONFIG_PATH, encoding='utf-8') as f:
+                config.read_file(f)
+        except FileNotFoundError:
+            print(f"設定ファイルが見つかりません: {CONFIG_PATH}")
+            raise
+        except configparser.Error as e:
+            print(f"設定ファイルの解析中にエラーが発生しました: {e}")
+            raise
+        _cached_config = config
+    return _cached_config
 
 
 def save_config(config: configparser.ConfigParser):
+    global _cached_config
     try:
         with open(CONFIG_PATH, 'w', encoding='utf-8') as configfile:
             config.write(configfile)
+        _cached_config = config
     except IOError as e:
         print(f"設定ファイルの保存中にエラーが発生しました: {e}")
         raise

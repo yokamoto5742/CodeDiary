@@ -12,5 +12,5 @@ class BaseAPIClient(ABC):
         pass
 
     @abstractmethod
-    def _generate_content(self, prompt: str, model_name: str) -> Tuple[str, int, int]:
+    def generate_content(self, prompt: str, model_name: str) -> Tuple[str, int, int]:
         pass

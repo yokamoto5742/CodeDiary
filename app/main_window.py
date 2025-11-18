@@ -29,16 +29,14 @@ class CodeDiaryMainWindow:
         self._setup_bindings()
 
     def _setup_locale(self):
-        try:
-            locale.setlocale(locale.LC_ALL, 'ja_JP.UTF-8')
-        except locale.Error:
+        locales = ['ja_JP.UTF-8', 'Japanese_Japan.932', 'ja']
+        for loc in locales:
             try:
-                locale.setlocale(locale.LC_ALL, 'Japanese_Japan.932')
+                locale.setlocale(locale.LC_ALL, loc)
+                return
             except locale.Error:
-                try:
-                    locale.setlocale(locale.LC_ALL, 'ja')
-                except locale.Error:
-                    print("警告: 日本語ロケールの設定に失敗しました。デフォルトロケールを使用します。")
+                continue
+        print("警告: 日本語ロケールの設定に失敗しました。デフォルトロケールを使用します。")
 
     def _setup_ui(self):
         window_width = self.config.get('WindowSettings', 'window_width', fallback='600')
@@ -168,7 +166,7 @@ class CodeDiaryMainWindow:
             if not self._validate_dates(since_date_obj, until_date_obj):  # バリデーションはdateオブジェクトで
                 return
 
-            self._set_buttons_state(tk.DISABLED)
+            self._set_buttons_state(False)
             self.progress_widget.start_progress("GitHub連携で日記を生成中...")
 
             # GitHub用の別スレッドで実行（文字列を渡す）
@@ -181,7 +179,7 @@ class CodeDiaryMainWindow:
 
         except Exception as e:
             messagebox.showerror("エラー", f"GitHub連携日記の作成でエラーが発生しました:\n{str(e)}")
-            self._set_buttons_state(tk.NORMAL)
+            self._set_buttons_state(True)
             self.progress_widget.stop_progress()
 
     def _generate_github_diary_thread(self, since_date, until_date):

@@ -22,7 +22,7 @@ class ClaudeAPIClient(BaseAPIClient):
         except Exception as e:
             raise APIError(f"Claude API初期化エラー: {str(e)}")
 
-    def _generate_content(self, prompt: str, model_name: str) -> Tuple[str, int, int]:
+    def generate_content(self, prompt: str, model_name: str) -> Tuple[str, int, int]:
         response = self.client.messages.create(
             model=model_name,
             max_tokens=6000, # 最大出力トークン数

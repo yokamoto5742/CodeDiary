@@ -68,10 +68,7 @@ class GitCommitHistoryService(BaseCommitService):
 
     def get_commit_history(self,
                            since_date: str = None,
-                           until_date: str = None,
-                           author: str = None,
-                           max_count: int = None,
-                           branch: str = None) -> List[Dict]:
+                           until_date: str = None) -> List[Dict]:
         cmd = ['git', 'log', '--pretty=format:%H|%an|%ae|%aI|%s']
 
         env = os.environ.copy()
@@ -110,9 +107,9 @@ class GitCommitHistoryService(BaseCommitService):
             return commits
 
         except subprocess.SubprocessError as e:
-            raise Exception(f"Gitコマンドの実行でエラーが発生しました: {e}")
+            raise Exception(f"Gitコマンドの実行でエラーが発生しました: {e}") from e
         except Exception as e:
-            raise Exception(f"コミット履歴の取得に失敗しました: {e}")
+            raise Exception(f"コミット履歴の取得に失敗しました: {e}") from e
 
     def format_output(self, commits: List[Dict], output_format: str = 'table') -> str:
         if not commits:

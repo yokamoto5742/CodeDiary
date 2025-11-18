@@ -22,7 +22,7 @@ class OpenAIAPIClient(BaseAPIClient):
         except Exception as e:
             raise APIError(f"OpenAI API初期化エラー: {str(e)}")
 
-    def _generate_content(self, prompt: str, model_name: str) -> Tuple[str, int, int]:
+    def generate_content(self, prompt: str, model_name: str) -> Tuple[str, int, int]:
         try:
             response = self.client.chat.completions.create(
                 model=model_name,
