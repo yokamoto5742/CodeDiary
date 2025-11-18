@@ -1,4 +1,5 @@
 import locale
+import os
 import threading
 import tkinter as tk
 from tkinter import messagebox, filedialog
@@ -146,7 +147,6 @@ class CodeDiaryMainWindow:
                 return
 
             # GitHub認証情報をチェック
-            import os
             if not os.getenv('GITHUB_TOKEN') or not os.getenv('GITHUB_USERNAME'):
                 messagebox.showerror(
                     "GitHub設定エラー",

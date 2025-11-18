@@ -96,64 +96,6 @@ self._set_buttons_state(False)
 
 ## 中優先度の改善点
 
-### 4. 型ヒントの統一
-
-**対象**: `service/git_commit_history.py`
-
-一部のメソッドで型ヒントが不足しています。
-
-```python
-# 69-74行目: デフォルト引数の型が明示されていない
-def get_commit_history(self,
-                       since_date: str = None,  # Optional[str] にすべき
-                       until_date: str = None,
-                       author: str = None,
-                       max_count: int = None,
-                       branch: str = None) -> List[Dict]:
-```
-
-**改善案**:
-
-```python
-def get_commit_history(self,
-                       since_date: Optional[str] = None,
-                       until_date: Optional[str] = None,
-                       author: Optional[str] = None,
-                       max_count: Optional[int] = None,
-                       branch: Optional[str] = None) -> List[Dict[str, str]]:
-```
-
----
-
-### 5. マジックナンバーの定数化
-
-**対象**: 複数ファイル
-
-```python
-# claude_api.py:28
-max_tokens=6000
-
-# openai_api.py:33
-max_completion_tokens=5000
-
-# github_commit_tracker.py:28
-per_page = 100
-
-# github_commit_tracker.py:40, 85, 205
-timeout=30
-```
-
-**改善案**: `utils/constants.py` に定数として定義
-
-```python
-# utils/constants.py
-API_TIMEOUT = 30
-GITHUB_PER_PAGE = 100
-CLAUDE_MAX_TOKENS = 6000
-OPENAI_MAX_TOKENS = 5000
-```
-
----
 
 ### 6. プライベートメソッドの外部呼び出し
 
@@ -206,31 +148,8 @@ since_jst = datetime.combine(target_datetime, datetime.min.time()).replace(tzinf
 
 `author`, `max_count`, `branch` パラメータが定義されていますが、実際のgitコマンドに使用されていません。
 
-**改善案**: 引数を削除するか、実装を追加
+**改善案**: 引数を削除する
 
-```python
-if author:
-    cmd.append(f'--author={author}')
-if max_count:
-    cmd.append(f'-n {max_count}')
-if branch:
-    cmd.append(branch)
-```
-
----
-
-### 9. インポート文の整理
-
-**対象**: `app/main_window.py:149`
-
-関数内でのインポートは避けるべきです。
-
-```python
-def _create_github_diary(self):
-    import os  # ファイル先頭でインポートすべき
-```
-
----
 
 ### 10. ネストの深さ削減
 
@@ -262,21 +181,6 @@ def _setup_locale(self):
             continue
     print("警告: 日本語ロケールの設定に失敗しました")
 ```
-
----
-
-### 11. コメントの過剰使用
-
-**対象**: `app/main_window.py`
-
-自明なコードにコメントが付いています。
-
-```python
-# メインフレーム  (50行目)
-main_frame = ttk.Frame(self.root, padding="10")
-```
-
-**改善案**: コードが自己説明的な場合はコメント不要
 
 ---
 
@@ -337,34 +241,7 @@ credentials = get_provider_credentials('claude')
 from utils.config_manager import CLAUDE_API_KEY
 ```
 
-**改善案**: どちらか一方に統一（関数ベース推奨）
+**改善案**: 関数ベースに統一
 
----
-
-## 良い実装パターン
-
-以下の実装は参考になる良いパターンです：
-
-1. **ファクトリーパターン** (`api_factory.py`) - AIプロバイダーの切り替えが容易
-2. **テンプレートメソッド** (`base_api.py`) - 共通インターフェースの強制
-3. **フォールバック機構** (`programming_diary_generator.py`) - 堅牢なエラーリカバリー
-4. **ウィジェット分離** (`widgets/`) - UIコンポーネントの再利用性向上
-5. **コールバックパターン** (`control_buttons_widget.py`) - UIとビジネスロジックの疎結合
-
----
-
-## まとめ
-
-| カテゴリ | 件数 |
-|---------|------|
-| 高優先度 | 3件 |
-| 中優先度 | 4件 |
-| 低優先度 | 6件 |
-
-主な改善ポイント：
-1. 重複コードの抽出とメソッド化
-2. 設定読み込みのキャッシュ化
-3. 一貫した型ヒントとエラーハンドリング
-4. マジックナンバーの定数化
 
 全体的にKISS原則に従った良いコードベースですが、上記の改善を行うことでさらにメンテナンス性が向上します。
