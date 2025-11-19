@@ -1,3 +1,5 @@
+"""日付選択ウィジェット"""
+
 import tkinter as tk
 from datetime import datetime, timedelta, timezone
 from tkinter import ttk
@@ -6,6 +8,7 @@ from tkcalendar import DateEntry
 
 
 class DateSelectionWidget(ttk.LabelFrame):
+    """カレンダーパネルで日付範囲を選択するウィジェット"""
 
     def __init__(self, parent, config, **kwargs):
         super().__init__(parent, text="対象期間", padding="5", **kwargs)
@@ -38,6 +41,7 @@ class DateSelectionWidget(ttk.LabelFrame):
         self._setup_ui()
 
     def _setup_ui(self):
+        """開始日と終了日のラベルと入力フィールドを配置"""
         self.columnconfigure(1, weight=1)
         self.columnconfigure(3, weight=1)
 
@@ -58,15 +62,19 @@ class DateSelectionWidget(ttk.LabelFrame):
         self.end_date_entry.grid(row=0, column=3, sticky=(tk.W, tk.E))
 
     def _create_date_entry(self):
+        """DateEntryウィジェットを作成"""
         return DateEntry(self, **self.date_entry_config)
 
     def get_start_date(self):
+        """開始日をdateオブジェクトで返す"""
         return self.start_date_entry.get_date()
 
     def get_end_date(self):
+        """終了日をdateオブジェクトで返す"""
         return self.end_date_entry.get_date()
 
     def validate_dates(self):
+        """選択された日付の妥当性を検証。タプル（成功フラグ、エラーメッセージ）で返す"""
         try:
             start_date = self.get_start_date()
             end_date = self.get_end_date()

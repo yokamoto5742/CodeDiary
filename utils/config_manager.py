@@ -1,3 +1,5 @@
+"""アプリケーション設定とAIプロバイダー認証情報を一元管理"""
+
 import configparser
 import os
 import sys
@@ -8,11 +10,10 @@ from dotenv import load_dotenv
 
 
 def get_config_path():
+    """設定ファイルのパスを取得。PyInstallerビルド時は_MEIPASSを使用"""
     if getattr(sys, 'frozen', False):
-        # PyInstallerでビルドされた実行ファイルの場合
         base_path = getattr(sys, '_MEIPASS', os.path.dirname(__file__))
     else:
-        # 通常のPythonスクリプトとして実行される場合
         base_path = os.path.dirname(__file__)
 
     return os.path.join(base_path, 'config.ini')
@@ -24,6 +25,7 @@ _cached_config = None
 
 
 def load_environment_variables():
+    """プロジェクトルートの.envファイルから環境変数を読み込む"""
     current_dir = Path(__file__).parent.parent
     env_path = current_dir / '.env'
 
@@ -37,6 +39,7 @@ load_environment_variables()
 
 
 def load_config(force_reload: bool = False) -> configparser.ConfigParser:
+    """設定ファイルを読み込む。キャッシュを使用して多重読み込みを防止"""
     global _cached_config
     if _cached_config is None or force_reload:
         config = configparser.ConfigParser()
@@ -54,6 +57,7 @@ def load_config(force_reload: bool = False) -> configparser.ConfigParser:
 
 
 def save_config(config: configparser.ConfigParser):
+    """設定ファイルに設定を保存し、キャッシュを更新"""
     global _cached_config
     try:
         with open(CONFIG_PATH, 'w', encoding='utf-8') as configfile:
@@ -65,6 +69,7 @@ def save_config(config: configparser.ConfigParser):
 
 
 def get_ai_provider_config() -> Dict[str, str]:
+    """設定ファイルからAIプロバイダー設定（メインとフォールバック）を取得"""
     config = load_config()
 
     provider = config.get('AI', 'provider', fallback='gemini')
@@ -77,6 +82,7 @@ def get_ai_provider_config() -> Dict[str, str]:
 
 
 def get_available_providers() -> Dict[str, bool]:
+    """環境変数から利用可能なAIプロバイダーを判定"""
     providers = {
         'claude': bool(os.environ.get("CLAUDE_API_KEY")),
         'openai': bool(os.environ.get("OPENAI_API_KEY")),
@@ -86,6 +92,7 @@ def get_available_providers() -> Dict[str, bool]:
 
 
 def get_provider_credentials(provider: str) -> Optional[Dict[str, Optional[str]]]:
+    """指定プロバイダーのAPI認証情報を環境変数から取得"""
     credentials_map = {
         'claude': {
             'api_key': os.environ.get("CLAUDE_API_KEY"),
@@ -106,6 +113,7 @@ def get_provider_credentials(provider: str) -> Optional[Dict[str, Optional[str]]
 
 
 def validate_provider_config(provider: str) -> bool:
+    """指定プロバイダーの認証情報が設定されているか検証"""
     credentials = get_provider_credentials(provider)
     if not credentials or not credentials.get('api_key'):
         return False
@@ -113,6 +121,7 @@ def validate_provider_config(provider: str) -> bool:
 
 
 def get_active_provider() -> str:
+    """利用可能なプロバイダーを優先順位に従って選択。全て未設定時は例外発生"""
     config = get_ai_provider_config()
     available_providers = get_available_providers()
 

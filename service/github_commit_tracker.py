@@ -1,3 +1,5 @@
+"""GitHub APIを使用したコミット取得とトラッキング機能"""
+
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Any, Tuple, Optional
@@ -8,6 +10,7 @@ from service.git_commit_history import BaseCommitService
 
 
 class GitHubCommitTracker(BaseCommitService):
+    """GitHubユーザーの複数リポジトリのコミット履歴をAPI経由で取得"""
     def __init__(self, token: Optional[str] = None, username: Optional[str] = None):
         super().__init__()
         self.token = token or os.getenv('GITHUB_TOKEN')
@@ -36,6 +39,7 @@ class GitHubCommitTracker(BaseCommitService):
         )
 
     def get_user_repositories(self) -> List[Dict[str, Any]]:
+        """認証ユーザーがアクセス可能な全リポジトリをページネーションで取得"""
         repos = []
         page = 1
         per_page = 100
@@ -73,6 +77,7 @@ class GitHubCommitTracker(BaseCommitService):
         return repos
 
     def get_commits_for_repo_by_date(self, repo_name: str, target_date: str) -> List[Dict[str, Any]]:
+        """指定リポジトリから特定日付のコミット一覧を取得"""
         try:
             since, until = self._convert_date_to_utc_range(target_date)
         except ValueError:
@@ -101,6 +106,7 @@ class GitHubCommitTracker(BaseCommitService):
             return []
 
     def get_all_commits_by_date(self, target_date: str) -> Dict[str, List[Dict[str, Any]]]:
+        """全リポジトリから特定日付のコミットを取得。リポジトリ名をキーとした辞書で返す"""
         repos = self.get_user_repositories()
         all_commits = {}
 
@@ -119,10 +125,12 @@ class GitHubCommitTracker(BaseCommitService):
         return all_commits
 
     def get_today_commits(self) -> Dict[str, List[Dict[str, Any]]]:
+        """本日のコミット一覧を取得"""
         today = datetime.now().strftime('%Y-%m-%d')
         return self.get_all_commits_by_date(today)
 
     def format_commits_output(self, commits_by_repo: Dict[str, List[Dict[str, Any]]], target_date: Optional[str] = None) -> str:
+        """コミット情報を人間が読みやすいテーブル形式で整形"""
         if not commits_by_repo:
             date_str = target_date or "今日"
             return f"{date_str}のコミットはありません。"
@@ -158,6 +166,7 @@ class GitHubCommitTracker(BaseCommitService):
         return '\n'.join(output)
 
     def get_commits_for_diary_generation(self, target_date: str) -> List[Dict[str, Any]]:
+        """特定日付のコミットを日誌生成用フォーマットで取得。リポジトリ名をメッセージに含める"""
         commits_by_repo = self.get_all_commits_by_date(target_date)
         formatted_commits = []
 
@@ -181,8 +190,8 @@ class GitHubCommitTracker(BaseCommitService):
 
         return formatted_commits
 
-    def get_commits_for_repo_by_date_range(self, repo_name: str, since_date: str, until_date: str) -> List[
-        Dict[str, Any]]:
+    def get_commits_for_repo_by_date_range(self, repo_name: str, since_date: str, until_date: str) -> List[Dict[str, Any]]:
+        """指定リポジトリから日付範囲内のコミット一覧を取得"""
         try:
             since, until = self._convert_date_to_utc_range(since_date, until_date)
         except ValueError:
@@ -208,6 +217,7 @@ class GitHubCommitTracker(BaseCommitService):
             return []
 
     def get_all_commits_by_date_range(self, since_date: str, until_date: str) -> Dict[str, List[Dict[str, Any]]]:
+        """全リポジトリから日付範囲内のコミットを取得"""
         repos = self.get_user_repositories()
         all_commits = {}
 
@@ -227,6 +237,7 @@ class GitHubCommitTracker(BaseCommitService):
         return all_commits
 
     def get_commits_for_diary_generation_range(self, since_date: str, until_date: Optional[str] = None) -> List[Dict[str, Any]]:
+        """日付範囲のコミットを日誌生成用フォーマットで取得"""
         if until_date is None:
             return self.get_commits_for_diary_generation(since_date)
 

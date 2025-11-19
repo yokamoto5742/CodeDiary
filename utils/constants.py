@@ -1,3 +1,5 @@
+"""アプリケーション定数メッセージの定義"""
+
 MESSAGES = {
     "GEMINI_API_CREDENTIALS_MISSING": "⚠️ Gemini APIの認証情報が設定されていません。環境変数を確認してください。",
     "CLAUDE_API_CREDENTIALS_MISSING": "⚠️ Claude APIの認証情報が設定されていません。環境変数を確認してください。",

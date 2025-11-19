@@ -1,3 +1,5 @@
+"""Gitコミット履歴からAIを使って日誌を生成"""
+
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -12,6 +14,7 @@ from utils.repository_name_extractor import get_repository_directory_name
 
 
 class ProgrammingDiaryGenerator:
+    """Gitコミット履歴からAI使用して日誌を生成し、テキスト形式で返す"""
     def __init__(self):
         load_environment_variables()
         self.config = load_config()
@@ -24,10 +27,12 @@ class ProgrammingDiaryGenerator:
         self._initialize_ai_provider()
 
     def _get_prompt_template_path(self) -> str:
+        """プロンプトテンプレートファイルのパスを取得"""
         base_path = Path(__file__).parent.parent
         return str(base_path / "prompt_template.md")
 
     def _initialize_ai_provider(self):
+        """設定から優先AIプロバイダーを初期化。利用不可の場合はフォールバック"""
         try:
             self.ai_provider = get_active_provider()
             print(f"使用するAIプロバイダー: {self.ai_provider}")
@@ -48,6 +53,7 @@ class ProgrammingDiaryGenerator:
             raise
 
     def _load_prompt_template(self) -> str:
+        """プロンプトテンプレートファイルを読み込む"""
         try:
             with open(self.prompt_template_path, encoding='utf-8') as f:
                 return f.read()
@@ -57,6 +63,7 @@ class ProgrammingDiaryGenerator:
             raise Exception(f"プロンプトテンプレートの読み込みに失敗しました: {e}")
 
     def _format_commits_for_prompt(self, commits: List[Dict]) -> str:
+        """コミット情報をAIプロンプト用にフォーマット。日付は和暦表記"""
         if not commits:
             return "コミット履歴がありません。"
 
@@ -76,18 +83,19 @@ class ProgrammingDiaryGenerator:
         return "\n".join(formatted_commits)
 
     def _convert_markdown_to_plain_text(self, markdown_text: str) -> str:
+        """AIが生成したMarkdown形式の日誌をプレーンテキストに変換"""
         patterns = [
-            (r'^#{1,6}\s*', ''),  # ヘッダー
-            (r'^\s*[-*+]\s*', ''),  # 箇条書き
-            (r'^\s*\d+\.\s*', ''),  # 番号付きリスト
-            (r'\*\*([^*]+)\*\*', r'\1'),  # 太字(**)
-            (r'\*([^*]+)\*', r'\1'),  # 斜体(*)
-            (r'__([^_]+)__', r'\1'),  # 太字(__)
-            (r'_([^_]+)_', r'\1'),  # 斜体(_)
-            (r'```[^`]*```', ''),  # コードブロック
-            (r'`([^`]+)`', r'\1'),  # インラインコード
-            (r'^[-–—]{3,}$', '---'),  # 水平線
-            (r'\n{3,}', '\n\n'),  # 連続改行
+            (r'^#{1,6}\s*', ''),
+            (r'^\s*[-*+]\s*', ''),
+            (r'^\s*\d+\.\s*', ''),
+            (r'\*\*([^*]+)\*\*', r'\1'),
+            (r'\*([^*]+)\*', r'\1'),
+            (r'__([^_]+)__', r'\1'),
+            (r'_([^_]+)_', r'\1'),
+            (r'```[^`]*```', ''),
+            (r'`([^`]+)`', r'\1'),
+            (r'^[-–—]{3,}$', '---'),
+            (r'\n{3,}', '\n\n'),
         ]
 
         plain_text = markdown_text
@@ -101,6 +109,7 @@ class ProgrammingDiaryGenerator:
         return plain_text.strip()
 
     def _try_fallback_provider(self, since_date: Optional[str], until_date: Optional[str], days: Optional[int], original_error: Exception, use_github: bool = False):
+        """プロバイダーエラー時にフォールバックプロバイダーで再試行"""
         try:
             config = get_ai_provider_config()
             available_providers = get_available_providers()
@@ -129,6 +138,7 @@ class ProgrammingDiaryGenerator:
                        until_date: Optional[str] = None,
                        days: Optional[int] = None,
                        use_github: bool = False) -> Tuple[str, int, int, str]:
+        """コミット履歴からAIで日誌を生成。GitHub APIまたはローカルGitから取得"""
         try:
             if self.ai_client is None:
                 raise Exception("AIクライアントが初期化されていません")
@@ -179,10 +189,7 @@ class ProgrammingDiaryGenerator:
                 if since_date is None or until_date is None:
                     raise Exception("日付が指定されていません")
 
-                commits = self.git_service.get_commit_history(
-                    since_date=since_date,
-                    until_date=until_date
-                )
+                commits = self.git_service.get_commit_history(since_date=since_date, until_date=until_date)
 
             print(f"   取得したコミット数: {len(commits)}")
 
