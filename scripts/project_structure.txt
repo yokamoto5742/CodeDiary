@@ -1,18 +1,13 @@
 ============================================================
 プロジェクト構造: CodeDiary
 パス: C:\Users\yokam\PycharmProjects\CodeDiary
-生成日時: 2025-09-27 15:41:20
+生成日時: 2025-11-19 18:56:24
 ============================================================
 
 └── CodeDiary
     ├── app
     │   ├── __init__.py
     │   └── main_window.py
-    ├── assets
-    │   └── CodeDiary.ico
-    ├── docs
-    │   ├── LICENSE
-    │   └── README.md
     ├── external_service
     │   ├── __init__.py
     │   ├── api_factory.py
@@ -20,11 +15,6 @@
     │   ├── claude_api.py
     │   ├── gemini_api.py
     │   └── openai_api.py
-    ├── scripts
-    │   ├── __init__.py
-    │   ├── APIsetting_check.py
-    │   ├── project_structure.py
-    │   └── version_manager.py
     ├── service
     │   ├── __init__.py
     │   ├── git_commit_history.py
@@ -46,7 +36,7 @@
     ├── requirements.txt
     ├── 1.40.0
     ├── 1.8.2
-    ├── CHANGELOG.md
     ├── CLAUDE.md
     ├── main.py
-    └── prompt_template.md
+    ├── prompt_template.md
+    └── pyrightconfig.json

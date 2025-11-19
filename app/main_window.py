@@ -17,7 +17,7 @@ from widgets import (
 
 
 class CodeDiaryMainWindow:
-    """CodeDiaryアプリケーションのメインウィンドウコントローラー
+    """CodeDiaryアプリケーションのメインウィンドウ
 
     UI構成管理、ユーザーイベント処理、ビジネスロジック連携を担当"""
 
@@ -32,8 +32,8 @@ class CodeDiaryMainWindow:
         self._setup_bindings()
 
     def _setup_locale(self):
-        """日本語ロケールを初期化。設定失敗時はデフォルトを使用"""
-        locales = ['ja_JP.UTF-8', 'Japanese_Japan.932', 'ja']
+        """日本語ロケールを初期化"""
+        locales = ['Japanese_Japan.932', 'ja']
         for loc in locales:
             try:
                 locale.setlocale(locale.LC_ALL, loc)
@@ -95,13 +95,13 @@ class CodeDiaryMainWindow:
         )
 
     def _setup_bindings(self):
-        """キーバインドを設定。Returnで日誌作成、Ctrl+Cで全テキストコピー、Ctrl+Lで全削除"""
+        """キーバインドを設定"""
         self.root.bind('<Return>', lambda e: self._create_diary())
         self.root.bind('<Control-c>', lambda e: self._copy_all_text())
         self.root.bind('<Control-l>', lambda e: self._clear_text())
 
     def _validate_dates(self, since_date=None, until_date=None):
-        """日付の妥当性を検証。GitHub連携時と通常時で分岐処理"""
+        """日付の妥当性を検証 GitHub連携時と通常時で分岐処理"""
         if since_date is not None and until_date is not None:
             if since_date > until_date:
                 messagebox.showerror("エラー", "終了日より前の日付を選択してください。")
@@ -114,7 +114,7 @@ class CodeDiaryMainWindow:
             return is_valid
 
     def _create_diary(self):
-        """ローカルGitリポジトリから日誌を生成。別スレッドで実行"""
+        """ローカルGitリポジトリから日誌を生成"""
         try:
             if not self._validate_dates():
                 return
@@ -138,7 +138,7 @@ class CodeDiaryMainWindow:
             self.progress_widget.clear_message()
 
     def _create_github_diary(self):
-        """GitHub APIから複数リポジトリのコミットを取得し、日誌を生成"""
+        """GitHub APIから複数リポジトリのコミットを取得し日誌を生成"""
         try:
             github_enabled = self.config.getboolean('GITHUB', 'enable_cross_repo_tracking', fallback=False)
             if not github_enabled:
@@ -209,7 +209,7 @@ class CodeDiaryMainWindow:
             self.root.after(0, self._display_error, str(e))
 
     def _display_diary_result(self, diary_content, input_tokens, output_tokens, model_name):
-        """生成した日誌を画面に表示し、クリップボードにコピー。Google Form自動入力を実行"""
+        """生成した日誌を画面に表示しクリップボードにコピー その後GoogleForm自動入力を実行"""
         try:
             self.diary_content_widget.set_content(diary_content)
 
@@ -227,13 +227,13 @@ class CodeDiaryMainWindow:
             self._display_error(f"結果表示エラー: {str(e)}")
 
     def _execute_GoogleFormAutomation(self, diary_content=None):
-        """Google Form自動入力をスレッド内で実行"""
+        """GoogleForm自動入力をスレッド内で実行"""
         thread = threading.Thread(target=self._run_google_form_automation, args=(diary_content,))
         thread.daemon = True
         thread.start()
 
     def _run_google_form_automation(self, diary_content=None):
-        """Google Formへの日誌内容の自動入力を実行"""
+        """ GoogleFormへの日誌内容の自動入力を実行"""
         try:
             automation = GoogleFormAutomation()
             if diary_content is not None:
@@ -271,7 +271,7 @@ class CodeDiaryMainWindow:
         self.progress_widget.clear_message()
 
     def _setup_repository(self):
-        """Gitリポジトリパスをユーザーに選択させ、設定を更新"""
+        """Gitリポジトリパスの設定を更新"""
         try:
             current_path = self.config.get('GIT', 'repository_path', fallback='')
             new_path = filedialog.askdirectory(
