@@ -2,7 +2,7 @@ import os
 import subprocess
 from abc import ABC
 from datetime import datetime, timedelta, timezone
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from utils.config_manager import load_config
 
@@ -11,7 +11,7 @@ class BaseCommitService(ABC):
     def __init__(self):
         self.config = load_config()
         self.jst = timezone(timedelta(hours=9))
-    
+
     def _convert_utc_to_jst(self, timestamp_utc: str) -> str:
         try:
             dt_utc = datetime.fromisoformat(timestamp_utc.replace('Z', '+00:00'))
@@ -19,9 +19,9 @@ class BaseCommitService(ABC):
             return dt_jst.isoformat()
         except ValueError:
             return timestamp_utc
-    
-    def _format_commit_data(self, hash_val: str, author_name: str, author_email: str, 
-                           timestamp: str, message: str, repository: str = None) -> Dict:
+
+    def _format_commit_data(self, hash_val: str, author_name: str, author_email: str,
+                           timestamp: str, message: str, repository: Optional[str] = None) -> Dict:
         """コミットデータを共通フォーマットで整形"""
         formatted_data = {
             'hash': hash_val,
@@ -55,7 +55,7 @@ class GitCommitHistoryService(BaseCommitService):
         try:
             repo_path = self.config.get('GIT', 'repository_path', fallback=None)
 
-            if not os.path.exists(repo_path):
+            if repo_path is None or not os.path.exists(repo_path):
                 raise Exception(f"リポジトリパスが存在しません: {repo_path}")
 
             git_dir = os.path.join(repo_path, '.git')
@@ -67,8 +67,8 @@ class GitCommitHistoryService(BaseCommitService):
             raise Exception(f"リポジトリパスの取得に失敗しました: {e}")
 
     def get_commit_history(self,
-                           since_date: str = None,
-                           until_date: str = None) -> List[Dict]:
+                           since_date: Optional[str] = None,
+                           until_date: Optional[str] = None) -> List[Dict]:
         cmd = ['git', 'log', '--pretty=format:%H|%an|%ae|%aI|%s']
 
         env = os.environ.copy()

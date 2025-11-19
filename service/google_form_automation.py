@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 import pyperclip
 from playwright.sync_api import sync_playwright, expect
@@ -12,11 +13,11 @@ class GoogleFormAutomation:
         self.config = load_config()
         self.jst = timezone(timedelta(hours=9))
         self.chrome_path = self._get_chrome_path()
-        self.content = None
+        self.content: Optional[str] = None
 
     def _get_chrome_path(self) -> str:
         chrome_path = self.config.get('Chrome', 'chrome_path', fallback=None)
-        if not chrome_path:
+        if chrome_path is None:
             raise Exception("設定ファイルにchrome_pathが設定されていません")
         return chrome_path
 
@@ -27,7 +28,7 @@ class GoogleFormAutomation:
 
     def _get_form_url(self) -> str:
         form_url = self.config.get('URL', 'form_url', fallback=None)
-        if not form_url:
+        if form_url is None:
             raise Exception("設定ファイルにform_urlが設定されていません")
         return form_url
 
@@ -43,7 +44,7 @@ class GoogleFormAutomation:
     def _get_today_date_string(self) -> str:
         return datetime.now(self.jst).strftime("%Y-%m-%d")
 
-    def run_automation(self, content: str = None):
+    def run_automation(self, content: Optional[str] = None):
         try:
             self._check_chrome_path()
             form_url = self._get_form_url()

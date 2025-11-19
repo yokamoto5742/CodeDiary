@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Tuple, Optional
 
 import requests
 
@@ -8,7 +8,7 @@ from service.git_commit_history import BaseCommitService
 
 
 class GitHubCommitTracker(BaseCommitService):
-    def __init__(self, token: str = None, username: str = None):
+    def __init__(self, token: Optional[str] = None, username: Optional[str] = None):
         super().__init__()
         self.token = token or os.getenv('GITHUB_TOKEN')
         self.username = username or os.getenv('GITHUB_USERNAME')
@@ -22,7 +22,7 @@ class GitHubCommitTracker(BaseCommitService):
         }
         self.base_url = 'https://api.github.com'
 
-    def _convert_date_to_utc_range(self, start_date: str, end_date: str = None) -> Tuple[str, str]:
+    def _convert_date_to_utc_range(self, start_date: str, end_date: Optional[str] = None) -> Tuple[str, str]:
         """日付文字列をUTC ISO形式の範囲に変換"""
         start = datetime.strptime(start_date, '%Y-%m-%d').date()
         end = datetime.strptime(end_date or start_date, '%Y-%m-%d').date()
@@ -122,7 +122,7 @@ class GitHubCommitTracker(BaseCommitService):
         today = datetime.now().strftime('%Y-%m-%d')
         return self.get_all_commits_by_date(today)
 
-    def format_commits_output(self, commits_by_repo: Dict[str, List[Dict[str, Any]]], target_date: str = None) -> str:
+    def format_commits_output(self, commits_by_repo: Dict[str, List[Dict[str, Any]]], target_date: Optional[str] = None) -> str:
         if not commits_by_repo:
             date_str = target_date or "今日"
             return f"{date_str}のコミットはありません。"
@@ -226,7 +226,7 @@ class GitHubCommitTracker(BaseCommitService):
 
         return all_commits
 
-    def get_commits_for_diary_generation_range(self, since_date: str, until_date: str = None) -> List[Dict[str, Any]]:
+    def get_commits_for_diary_generation_range(self, since_date: str, until_date: Optional[str] = None) -> List[Dict[str, Any]]:
         if until_date is None:
             return self.get_commits_for_diary_generation(since_date)
 

@@ -1,7 +1,6 @@
 import locale
 import os
 import threading
-import tkinter as tk
 from tkinter import messagebox, filedialog
 from tkinter import ttk
 
@@ -48,7 +47,7 @@ class CodeDiaryMainWindow:
 
         # メインフレーム
         main_frame = ttk.Frame(self.root, padding="10")
-        main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        main_frame.grid(row=0, column=0, sticky="wens")
 
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
@@ -60,12 +59,12 @@ class CodeDiaryMainWindow:
             self.config
         )
         self.date_selection_widget.grid(
-            row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 10)
+            row=0, column=0, sticky="we", pady=(0, 10)
         )
 
         self.progress_widget = ProgressWidget(main_frame)
         self.progress_widget.grid(
-            row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 5)
+            row=1, column=0, sticky="we", pady=(0, 5)
         )
 
         self.diary_content_widget = DiaryContentWidget(
@@ -73,12 +72,12 @@ class CodeDiaryMainWindow:
             self.config
         )
         self.diary_content_widget.grid(
-            row=2, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10)
+            row=2, column=0, sticky="wens", pady=(0, 10)
         )
 
         self.control_buttons_widget = ControlButtonsWidget(main_frame)
         self.control_buttons_widget.grid(
-            row=3, column=0, sticky=(tk.W, tk.E)
+            row=3, column=0, sticky="we"
         )
 
         self.control_buttons_widget.set_callbacks(
@@ -231,7 +230,8 @@ class CodeDiaryMainWindow:
     def _run_google_form_automation(self, diary_content=None):
         try:
             automation = GoogleFormAutomation()
-            automation.run_automation(diary_content)
+            if diary_content is not None:
+                automation.run_automation(diary_content)
         except Exception as e:
             self._schedule_error_display(str(e))
 

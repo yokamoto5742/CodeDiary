@@ -1,5 +1,5 @@
 from anthropic import Anthropic
-from typing import Tuple
+from typing import Tuple, Optional
 
 from external_service.base_api import BaseAPIClient
 from utils.config_manager import CLAUDE_API_KEY, CLAUDE_MODEL
@@ -10,7 +10,7 @@ from utils.exceptions import APIError
 class ClaudeAPIClient(BaseAPIClient):
     def __init__(self):
         super().__init__(CLAUDE_API_KEY, CLAUDE_MODEL)
-        self.client = None
+        self.client: Optional[Anthropic] = None
 
     def initialize(self) -> bool:
         try:
@@ -23,6 +23,8 @@ class ClaudeAPIClient(BaseAPIClient):
             raise APIError(f"Claude API初期化エラー: {str(e)}")
 
     def generate_content(self, prompt: str, model_name: str) -> Tuple[str, int, int]:
+        if self.client is None:
+            raise APIError("Claude APIクライアントが初期化されていません")
         response = self.client.messages.create(
             model=model_name,
             max_tokens=6000, # 最大出力トークン数
@@ -32,7 +34,11 @@ class ClaudeAPIClient(BaseAPIClient):
         )
 
         if response.content:
-            summary_text = response.content[0].text
+            content_block = response.content[0]
+            if hasattr(content_block, 'text'):
+                summary_text = content_block.text  # type: ignore
+            else:
+                summary_text = "レスポンスが空です"
         else:
             summary_text = "レスポンスが空です"
 

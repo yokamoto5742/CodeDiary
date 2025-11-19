@@ -1,7 +1,7 @@
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Any
 
 from external_service.api_factory import APIFactory
 from service.git_commit_history import GitCommitHistoryService
@@ -16,10 +16,11 @@ class ProgrammingDiaryGenerator:
         load_environment_variables()
         self.config = load_config()
         self.git_service = GitCommitHistoryService()
-        self.ai_provider = None
-        self.ai_client = None
+        self.ai_provider: Optional[str] = None
+        self.ai_client: Any = None
         self.prompt_template_path = self._get_prompt_template_path()
         self.jst = timezone(timedelta(hours=9))
+        self.default_model: Optional[str] = None
         self._initialize_ai_provider()
 
     def _get_prompt_template_path(self) -> str:
@@ -34,12 +35,13 @@ class ProgrammingDiaryGenerator:
             self.ai_client = APIFactory.create_client(self.ai_provider)
 
             credentials = get_provider_credentials(self.ai_provider)
-            if credentials:
-                self.default_model = credentials.get('model', self.ai_client.default_model)
-            else:
-                self.default_model = self.ai_client.default_model
+            if self.ai_client is not None:
+                if credentials:
+                    self.default_model = credentials.get('model', self.ai_client.default_model)
+                else:
+                    self.default_model = self.ai_client.default_model
 
-            print(f"使用するモデル: {self.default_model}")
+                print(f"使用するモデル: {self.default_model}")
 
         except Exception as e:
             print(f"AIプロバイダーの初期化でエラーが発生しました: {e}")
@@ -98,7 +100,7 @@ class ProgrammingDiaryGenerator:
 
         return plain_text.strip()
 
-    def _try_fallback_provider(self, since_date, until_date, days, original_error, use_github=False):
+    def _try_fallback_provider(self, since_date: Optional[str], until_date: Optional[str], days: Optional[int], original_error: Exception, use_github: bool = False):
         try:
             config = get_ai_provider_config()
             available_providers = get_available_providers()
@@ -111,7 +113,7 @@ class ProgrammingDiaryGenerator:
                 self.ai_provider = fallback_provider
                 self.ai_client = APIFactory.create_client(fallback_provider)
                 credentials = get_provider_credentials(fallback_provider)
-                if credentials:
+                if self.ai_client is not None and credentials:
                     self.default_model = credentials.get('model', self.ai_client.default_model)
 
                 return self.generate_diary(since_date, until_date, days, use_github)
@@ -128,6 +130,8 @@ class ProgrammingDiaryGenerator:
                        days: Optional[int] = None,
                        use_github: bool = False) -> Tuple[str, int, int, str]:
         try:
+            if self.ai_client is None:
+                raise Exception("AIクライアントが初期化されていません")
             self.ai_client.initialize()
 
             if days:
@@ -139,6 +143,7 @@ class ProgrammingDiaryGenerator:
             print(f"   使用モデル: {self.default_model}")
 
             github_tracker = None
+            commits: List[Dict] = []
             if use_github:
                 print(f"   データソース: GitHub API (複数リポジトリ)")
 
@@ -171,6 +176,9 @@ class ProgrammingDiaryGenerator:
                 print(f"   現在のブランチ: {repo_info['current_branch']}")
                 print(f"   最新コミット: {repo_info['latest_commit']}")
 
+                if since_date is None or until_date is None:
+                    raise Exception("日付が指定されていません")
+
                 commits = self.git_service.get_commit_history(
                     since_date=since_date,
                     until_date=until_date
@@ -181,6 +189,9 @@ class ProgrammingDiaryGenerator:
             prompt_template = self._load_prompt_template()
             formatted_commits = self._format_commits_for_prompt(commits)
             full_prompt = f"{prompt_template}\n\n## Git コミット履歴\n\n{formatted_commits}"
+
+            if self.ai_client is None or self.default_model is None:
+                raise Exception("AIクライアントまたはモデルが設定されていません")
 
             diary_content, input_tokens, output_tokens = self.ai_client.generate_content(
                 prompt=full_prompt,
@@ -203,5 +214,5 @@ class ProgrammingDiaryGenerator:
 
         except Exception as e:
             return self._try_fallback_provider(
-                since_date, until_date, days, str(e), use_github
+                since_date, until_date, days, e, use_github
             )

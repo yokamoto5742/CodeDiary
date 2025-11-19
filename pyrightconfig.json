@@ -1,7 +1,7 @@
 {
   "typeCheckingMode": "standard",
   "pythonVersion": "3.12",
-  "include": ["app","services","utils","widgets"],
+  "include": ["app","service","external_service","utils","widgets","scripts"],
   "exclude": ["tests", "scripts"],
   "reportMissingTypeStubs": false,
   "reportUnusedVariable": true,

@@ -1,6 +1,7 @@
 import time
 import tkinter as tk
 from tkinter import ttk
+from typing import Optional
 
 
 class ProgressWidget(ttk.Label):
@@ -11,8 +12,8 @@ class ProgressWidget(ttk.Label):
 
         super().__init__(parent, textvariable=self.progress_var, **kwargs)
 
-        self.start_time = None
-        self.timer_after_id = None
+        self.start_time: Optional[float] = None
+        self.timer_after_id: Optional[str] = None
 
     def set_message(self, message: str):
         self.progress_var.set(message)
@@ -40,7 +41,7 @@ class ProgressWidget(ttk.Label):
 
             self.timer_after_id = self.after(1000, self._update_elapsed_time)
 
-    def set_completion_message(self, input_tokens: int, output_tokens: int, model_name: str = None):
+    def set_completion_message(self, input_tokens: int, output_tokens: int, model_name: Optional[str] = None):
         self._stop_timer()
 
         if self.start_time:

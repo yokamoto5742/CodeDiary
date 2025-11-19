@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Optional, Tuple
 
 import google.generativeai as genai
 
@@ -11,13 +11,13 @@ from utils.exceptions import APIError
 class GeminiAPIClient(BaseAPIClient):
     def __init__(self):
         super().__init__(GEMINI_API_KEY, GEMINI_MODEL)
-        self.client = None
-        self.thinking_budget = GEMINI_THINKING_BUDGET
+        self.client: object | None = None
+        self.thinking_budget: Optional[str] = GEMINI_THINKING_BUDGET
 
     def initialize(self) -> bool:
         try:
             if self.api_key:
-                genai.configure(api_key=self.api_key)
+                genai.configure(api_key=self.api_key)  # type: ignore
                 return True
             else:
                 raise APIError(MESSAGES["GEMINI_API_CREDENTIALS_MISSING"])
@@ -26,7 +26,7 @@ class GeminiAPIClient(BaseAPIClient):
 
     def generate_content(self, prompt: str, model_name: str) -> Tuple[str, int, int]:
         try:
-            model = genai.GenerativeModel(model_name)
+            model = genai.GenerativeModel(model_name)  # type: ignore
             response = model.generate_content(prompt)
 
             if hasattr(response, 'text'):

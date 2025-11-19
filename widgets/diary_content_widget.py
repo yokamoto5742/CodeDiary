@@ -16,7 +16,7 @@ class DiaryContentWidget(ttk.LabelFrame):
         self.rowconfigure(0, weight=1)
 
         text_container = ttk.Frame(self)
-        text_container.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        text_container.grid(row=0, column=0, sticky="wens")
         text_container.columnconfigure(0, weight=1)
         text_container.rowconfigure(0, weight=1)
 
@@ -30,14 +30,14 @@ class DiaryContentWidget(ttk.LabelFrame):
             font=(font_name, font_size),
             state=tk.NORMAL
         )
-        self.diary_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        self.diary_text.grid(row=0, column=0, sticky="wens")
 
         scrollbar = ttk.Scrollbar(
             text_container, 
             orient=tk.VERTICAL, 
             command=self.diary_text.yview
         )
-        scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
+        scrollbar.grid(row=0, column=1, sticky="ns")
         self.diary_text.config(yscrollcommand=scrollbar.set)
 
         self.set_placeholder_text()

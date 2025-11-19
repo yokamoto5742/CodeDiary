@@ -1,5 +1,5 @@
 from openai import OpenAI
-from typing import Tuple
+from typing import Tuple, Optional
 
 from external_service.base_api import BaseAPIClient
 from utils.config_manager import OPENAI_API_KEY, OPENAI_MODEL
@@ -10,7 +10,7 @@ from utils.exceptions import APIError
 class OpenAIAPIClient(BaseAPIClient):
     def __init__(self):
         super().__init__(OPENAI_API_KEY, OPENAI_MODEL)
-        self.client = None
+        self.client: Optional[OpenAI] = None
 
     def initialize(self) -> bool:
         try:
@@ -23,6 +23,8 @@ class OpenAIAPIClient(BaseAPIClient):
             raise APIError(f"OpenAI API初期化エラー: {str(e)}")
 
     def generate_content(self, prompt: str, model_name: str) -> Tuple[str, int, int]:
+        if self.client is None:
+            raise APIError("OpenAI APIクライアントが初期化されていません")
         try:
             response = self.client.chat.completions.create(
                 model=model_name,
@@ -38,8 +40,8 @@ class OpenAIAPIClient(BaseAPIClient):
             else:
                 summary_text = "レスポンスが空です"
 
-            input_tokens = response.usage.prompt_tokens
-            output_tokens = response.usage.completion_tokens
+            input_tokens = response.usage.prompt_tokens if response.usage else 0
+            output_tokens = response.usage.completion_tokens if response.usage else 0
 
             return summary_text, input_tokens, output_tokens
 

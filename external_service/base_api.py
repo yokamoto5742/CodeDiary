@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Tuple
+from typing import Optional, Tuple
 
 
 class BaseAPIClient(ABC):
-    def __init__(self, api_key: str, default_model: str):
+    def __init__(self, api_key: Optional[str], default_model: Optional[str]):
         self.api_key = api_key
         self.default_model = default_model
 
