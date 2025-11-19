@@ -1,5 +1,3 @@
-"""Git及びGitHubコミット取得の基本機能を提供"""
-
 import os
 import subprocess
 from abc import ABC
@@ -16,7 +14,7 @@ class BaseCommitService(ABC):
         self.jst = timezone(timedelta(hours=9))
 
     def _convert_utc_to_jst(self, timestamp_utc: str) -> str:
-        """UTC形式のタイムスタンプをJST（日本時間）に変換"""
+        """UTC形式のタイムスタンプを日本時間に変換"""
         try:
             dt_utc = datetime.fromisoformat(timestamp_utc.replace('Z', '+00:00'))
             dt_jst = dt_utc.astimezone(self.jst)
@@ -39,7 +37,7 @@ class BaseCommitService(ABC):
         return formatted_data
     
     def _get_subprocess_kwargs(self):
-        """subprocess実行時の標準的な引数を生成。Windows環境ではコンソール非表示"""
+        """subprocess実行時の標準的な引数を生成"""
         kwargs = {
             'capture_output': True,
             'text': True,
@@ -59,7 +57,7 @@ class GitCommitHistoryService(BaseCommitService):
         self.repository_path = self._get_repository_path()
 
     def _get_repository_path(self) -> str:
-        """設定ファイルからリポジトリパスを取得し、妥当性を検証"""
+        """設定ファイルからリポジトリパスを取得"""
         try:
             repo_path = self.config.get('GIT', 'repository_path', fallback=None)
 
@@ -121,7 +119,7 @@ class GitCommitHistoryService(BaseCommitService):
             raise Exception(f"コミット履歴の取得に失敗しました: {e}") from e
 
     def format_output(self, commits: List[Dict], output_format: str = 'table') -> str:
-        """コミット履歴を人間が読みやすいテーブル形式で整形"""
+        """コミット履歴をテーブル形式に整形"""
         if not commits:
             return "コミット履歴が見つかりませんでした。"
 
@@ -146,7 +144,7 @@ class GitCommitHistoryService(BaseCommitService):
         return '\n'.join(output)
 
     def get_repository_info(self) -> Dict:
-        """リポジトリの現在の状態（ブランチ、リモート、最新コミット）を取得"""
+        """リポジトリの現在の状態を取得"""
         try:
             env = os.environ.copy()
             env['TZ'] = 'Asia/Tokyo'
@@ -199,7 +197,7 @@ class GitCommitHistoryService(BaseCommitService):
             }
 
     def get_branch_list(self) -> List[str]:
-        """リポジトリの全ブランチ（ローカル及びリモート）を取得"""
+        """リポジトリの全ブランチを取得"""
         try:
             env = os.environ.copy()
             env['TZ'] = 'Asia/Tokyo'
