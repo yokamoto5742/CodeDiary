@@ -249,7 +249,10 @@ print("コードブロック")
 
         with patch.object(generator, '_load_prompt_template', return_value=mock_template):
             # テスト実行（エラーは内部でキャッチされる）
-            result, input_tokens, output_tokens, model_name = generator.generate_diary()
+            result, input_tokens, output_tokens, model_name = generator.generate_diary(
+                since_date="2024-01-01",
+                until_date="2024-01-02"
+            )
 
         # プロジェクト名なしでも結果が返されることを確認
         assert result is not None
