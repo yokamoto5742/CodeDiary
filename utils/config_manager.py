@@ -1,5 +1,3 @@
-"""アプリケーション設定とAIプロバイダー認証情報を一元管理"""
-
 import configparser
 import os
 import sys

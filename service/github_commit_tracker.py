@@ -1,5 +1,3 @@
-"""GitHub APIを使用したコミット取得とトラッキング機能"""
-
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Any, Tuple, Optional
@@ -130,7 +128,7 @@ class GitHubCommitTracker(BaseCommitService):
         return self.get_all_commits_by_date(today)
 
     def format_commits_output(self, commits_by_repo: Dict[str, List[Dict[str, Any]]], target_date: Optional[str] = None) -> str:
-        """コミット情報を人間が読みやすいテーブル形式で整形"""
+        """コミット情報をテーブル形式に整形"""
         if not commits_by_repo:
             date_str = target_date or "今日"
             return f"{date_str}のコミットはありません。"
@@ -166,7 +164,7 @@ class GitHubCommitTracker(BaseCommitService):
         return '\n'.join(output)
 
     def get_commits_for_diary_generation(self, target_date: str) -> List[Dict[str, Any]]:
-        """特定日付のコミットを日誌生成用フォーマットで取得。リポジトリ名をメッセージに含める"""
+        """特定日付のコミットを日誌生成用フォーマットで取得しリポジトリ名をメッセージに含める"""
         commits_by_repo = self.get_all_commits_by_date(target_date)
         formatted_commits = []
 

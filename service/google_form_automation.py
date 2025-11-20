@@ -1,5 +1,3 @@
-"""Google Formsへの自動入力機能を提供"""
-
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -11,7 +9,7 @@ from utils.config_manager import load_config
 
 
 class GoogleFormAutomation:
-    """Playwrightを使用してGoogle Formsに自動的に日誌を入力"""
+    """Playwrightを使用してGoogleFormに自動的に日誌を入力"""
     def __init__(self):
         self.config = load_config()
         self.jst = timezone(timedelta(hours=9))
@@ -32,14 +30,14 @@ class GoogleFormAutomation:
         return True
 
     def _get_form_url(self) -> str:
-        """設定ファイルからGoogle FormのURLを取得"""
+        """設定ファイルからGoogleFormのURLを取得"""
         form_url = self.config.get('URL', 'form_url', fallback=None)
         if form_url is None:
             raise Exception("設定ファイルにform_urlが設定されていません")
         return form_url
 
     def _get_clipboard_content(self) -> str:
-        """クリップボード内容を取得。空の場合は例外を発生"""
+        """クリップボード内容を取得"""
         try:
             clipboard_text = pyperclip.paste()
             if clipboard_text is None or not clipboard_text.strip():
@@ -53,7 +51,7 @@ class GoogleFormAutomation:
         return datetime.now(self.jst).strftime("%Y-%m-%d")
 
     def run_automation(self, content: Optional[str] = None):
-        """Google Formを開き、日付と日誌内容を自動入力"""
+        """GoogleFormに日付と日誌内容を自動入力"""
         try:
             self._check_chrome_path()
             form_url = self._get_form_url()

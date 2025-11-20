@@ -1,6 +1,3 @@
-"""アプリケーション定義の例外クラス"""
-
-
 class AppError(Exception):
     """アプリケーションの基本例外"""
     pass

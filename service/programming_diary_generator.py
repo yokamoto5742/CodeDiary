@@ -1,5 +1,3 @@
-"""Gitコミット履歴からAIを使って日誌を生成"""
-
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -14,7 +12,7 @@ from utils.repository_name_extractor import get_repository_directory_name
 
 
 class ProgrammingDiaryGenerator:
-    """Gitコミット履歴からAI使用して日誌を生成し、テキスト形式で返す"""
+    """Gitコミット履歴から生成AIモデルを使用して日誌を生成"""
     def __init__(self):
         load_environment_variables()
         self.config = load_config()
@@ -32,7 +30,7 @@ class ProgrammingDiaryGenerator:
         return str(base_path / "prompt_template.md")
 
     def _initialize_ai_provider(self):
-        """設定から優先AIプロバイダーを初期化。利用不可の場合はフォールバック"""
+        """設定から優先AIプロバイダーを初期化"""
         try:
             self.ai_provider = get_active_provider()
             print(f"使用するAIプロバイダー: {self.ai_provider}")
@@ -63,7 +61,7 @@ class ProgrammingDiaryGenerator:
             raise Exception(f"プロンプトテンプレートの読み込みに失敗しました: {e}")
 
     def _format_commits_for_prompt(self, commits: List[Dict]) -> str:
-        """コミット情報をAIプロンプト用にフォーマット。日付は和暦表記"""
+        """コミット情報を生成AIプロンプト用にフォーマット"""
         if not commits:
             return "コミット履歴がありません。"
 
@@ -83,7 +81,7 @@ class ProgrammingDiaryGenerator:
         return "\n".join(formatted_commits)
 
     def _convert_markdown_to_plain_text(self, markdown_text: str) -> str:
-        """AIが生成したMarkdown形式の日誌をプレーンテキストに変換"""
+        """生成AIが生成したMarkdown形式の日誌をプレーンテキストに変換"""
         patterns = [
             (r'^#{1,6}\s*', ''),
             (r'^\s*[-*+]\s*', ''),

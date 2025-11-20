@@ -1,5 +1,3 @@
-"""環境変数の読み込みを管理"""
-
 import os
 from pathlib import Path
 
