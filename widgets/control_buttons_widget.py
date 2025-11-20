@@ -1,5 +1,3 @@
-"""操作ボタン群ウィジェット"""
-
 import tkinter as tk
 from tkinter import ttk
 from typing import Callable, Optional

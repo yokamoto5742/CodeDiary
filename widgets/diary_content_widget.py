@@ -1,5 +1,3 @@
-"""日誌内容表示ウィジェット"""
-
 import tkinter as tk
 from tkinter import ttk
 

@@ -1,5 +1,3 @@
-"""日付選択ウィジェット"""
-
 import tkinter as tk
 from datetime import datetime, timedelta, timezone
 from tkinter import ttk
