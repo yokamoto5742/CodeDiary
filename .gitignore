@@ -9,5 +9,6 @@ logs/
 *.env
 *.log
 
+.coverage
 misc.xml
 error_log.txt
