@@ -27,7 +27,7 @@ class ProgrammingDiaryGenerator:
     def _get_prompt_template_path(self) -> str:
         """プロンプトテンプレートファイルのパスを取得"""
         base_path = Path(__file__).parent.parent
-        return str(base_path / "prompt_template.md")
+        return str(base_path / "utils" / "prompt_template.md")
 
     def _initialize_ai_provider(self):
         """設定から優先AIプロバイダーを初期化"""
