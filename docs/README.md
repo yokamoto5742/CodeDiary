@@ -201,6 +201,7 @@ CodeDiary/
 │   ├── constants.py            # 定数定義
 │   ├── exceptions.py           # カスタム例外
 │   ├── env_loader.py           # 環境変数読み込み
+│   ├── prompt_template.md      # 生成AI用プロンプト
 │   └── repository_name_extractor.py # リポジトリ名抽出
 ├── widgets/
 │   ├── __init__.py
@@ -472,14 +473,3 @@ python build.py
 
 - GitHub Issues: プロジェクトのIssueページ
 - 開発者へのダイレクトメッセージ
-
-## 貢献
-
-プロジェクトへの貢献を歓迎します！貢献方法：
-
-1. リポジトリをフォーク
-2. フィーチャーブランチを作成
-3. 変更をコミット
-4. プルリクエストを送信
-
-開発に参加される際は、既存のコードスタイルとテストパターンに従ってください。

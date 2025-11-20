@@ -1,9 +1,20 @@
 # CHANGELOG
 
-All notable changes to this project will be documented in this file.
+## [1.1.2] - 2025-11-20
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+### Fixed
+- **ビルドプロセスの修正**: `prompt_template.md`のパスをutilsディレクトリに修正
+  - `build.py`: ビルド時にprompt_template.mdを正しい位置から取得するよう修正
+  - バンドルファイルに正しいパスで含める処理を改善
+
+## [1.1.1] 記載なし
+
+### Changed
+- **UIコードの整理**: `widgets`モジュール内の不要なコメントを削除し、コード品質を向上
+- **バージョン情報の更新**: アプリケーションバージョンを1.1.2に更新、README.mdを同期
+
+### Enhanced
+- **GitHub連携フォーマット改善**: `service/github_commit_tracker.py`のコミット情報フォーマット処理を最適化
 
 ## [1.0.6] - 2025-09-28
 
