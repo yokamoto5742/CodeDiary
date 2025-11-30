@@ -8,7 +8,7 @@ class DiaryContentWidget(ttk.LabelFrame):
     def __init__(self, parent, config, **kwargs):
         super().__init__(parent, text="日誌内容", padding="5", **kwargs)
         self.config = config
-        self.placeholder_text = "[ここに日誌を出力]"
+        self.placeholder_text = "[日誌内容]"
 
         self._setup_ui()
 

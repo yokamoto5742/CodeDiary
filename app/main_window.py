@@ -5,7 +5,7 @@ from tkinter import messagebox, filedialog
 from tkinter import ttk
 
 from app import __version__
-from service.google_form_automation import GoogleFormAutomation
+from service.launch_form_page import launch_form_page
 from service.programming_diary_generator import ProgrammingDiaryGenerator
 from utils.config_manager import load_config, save_config
 from widgets import (
@@ -96,7 +96,6 @@ class CodeDiaryMainWindow:
 
     def _setup_bindings(self):
         """キーバインドを設定"""
-        self.root.bind('<Return>', lambda e: self._create_diary())
         self.root.bind('<Control-c>', lambda e: self._copy_all_text())
         self.root.bind('<Control-l>', lambda e: self._clear_text())
 
@@ -209,7 +208,7 @@ class CodeDiaryMainWindow:
             self.root.after(0, self._display_error, str(e))
 
     def _display_diary_result(self, diary_content, input_tokens, output_tokens, model_name):
-        """生成した日誌を画面に表示しクリップボードにコピー その後プログラミング学習日誌フォームを開く"""
+        """生成した日誌を画面に表示しクリップボードにコピー その後Chromeでフォームを開く"""
         try:
             self.diary_content_widget.set_content(diary_content)
 
@@ -221,25 +220,10 @@ class CodeDiaryMainWindow:
             self._set_buttons_state(True)
             self.control_buttons_widget.set_copy_button_state(True)
 
-            self._execute_GoogleFormAutomation(diary_content)
+            launch_form_page()
 
         except Exception as e:
             self._display_error(f"結果表示エラー: {str(e)}")
-
-    def _execute_GoogleFormAutomation(self, diary_content=None):
-        """GoogleForm自動入力をスレッド内で実行"""
-        thread = threading.Thread(target=self._run_google_form_automation, args=(diary_content,))
-        thread.daemon = True
-        thread.start()
-
-    def _run_google_form_automation(self, diary_content=None):
-        """ GoogleFormへの日誌内容の自動入力を実行"""
-        try:
-            automation = GoogleFormAutomation()
-            if diary_content is not None:
-                automation.run_automation(diary_content)
-        except Exception as e:
-            self._schedule_error_display(str(e))
 
     def _schedule_error_display(self, error_message: str):
         """メインスレッドでエラーメッセージを表示するようスケジュール"""
