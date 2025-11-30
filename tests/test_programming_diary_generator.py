@@ -1,7 +1,6 @@
-import os
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock, mock_open
+from unittest.mock import Mock, patch, mock_open
 
 import pytest
 
@@ -222,7 +221,7 @@ print("コードブロック")
         mock_template = "テスト用プロンプトテンプレート"
 
         # 固定日時でテスト
-        fixed_datetime = datetime(2024, 1, 15, 10, 30, 0, tzinfo=timezone(timedelta(hours=9)))
+        fixed_datetime = datetime(2024, 1, 15, 10, 30, tzinfo=timezone(timedelta(hours=9)))
 
         with patch.object(generator, '_load_prompt_template', return_value=mock_template), \
              patch('service.programming_diary_generator.datetime') as mock_datetime, \

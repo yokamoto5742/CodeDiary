@@ -1,11 +1,10 @@
-import os
 import subprocess
-from datetime import datetime, timezone, timedelta
-from unittest.mock import Mock, patch, MagicMock
+from datetime import timezone, timedelta
+from unittest.mock import Mock, patch
 
 import pytest
 
-from service.git_commit_history import GitCommitHistoryService, BaseCommitService
+from service.git_commit_history import GitCommitHistoryService
 
 
 class TestGitCommitHistoryService:

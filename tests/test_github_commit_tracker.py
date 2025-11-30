@@ -1,12 +1,10 @@
 import os
-from datetime import datetime, timedelta, timezone
-from unittest.mock import Mock, patch, mock_open
+from unittest.mock import Mock, patch
 
 import pytest
 import requests
 
 from service.github_commit_tracker import GitHubCommitTracker
-from service.git_commit_history import BaseCommitService
 
 
 class TestGitHubCommitTracker:
