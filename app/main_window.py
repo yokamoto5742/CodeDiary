@@ -209,7 +209,7 @@ class CodeDiaryMainWindow:
             self.root.after(0, self._display_error, str(e))
 
     def _display_diary_result(self, diary_content, input_tokens, output_tokens, model_name):
-        """生成した日誌を画面に表示しクリップボードにコピー その後GoogleForm自動入力を実行"""
+        """生成した日誌を画面に表示しクリップボードにコピー その後プログラミング学習日誌フォームを開く"""
         try:
             self.diary_content_widget.set_content(diary_content)
 
@@ -258,9 +258,9 @@ class CodeDiaryMainWindow:
                 content = self.diary_content_widget.get_content()
                 self.root.clipboard_clear()
                 self.root.clipboard_append(content)
-                messagebox.showinfo("コピー完了", "クリップボードにコピーしました。")
+                messagebox.showinfo("コピー完了", "日誌内容をクリップボードにコピーしました")
             else:
-                messagebox.showwarning("警告", "コピーするテキストがありません。")
+                messagebox.showwarning("警告", "コピーするテキストがありません")
         except Exception as e:
             messagebox.showerror("エラー", f"コピー中にエラーが発生しました: {str(e)}")
 
