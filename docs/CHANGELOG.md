@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## [1.1.3] - 2025-11-30
+
+### Added
+- **テストスイート拡張**: CodeDiaryMainWindow と launch_form_page のテストを追加
+  - `tests/test_launch_form_page.py`: launch_form_page 関数の機能テスト（168 行）
+- **プログラミング学習日誌フォーム起動機能**: `service/launch_form_page.py` を新規追加
+  - UI から学習日誌フォームの起動をサポート
+  - `utils/config.ini` に対応設定を追加
+
+### Changed
+- **モジュール整理**: `google_form_automation.py` を `service/` から `scripts/` に移動し、スクリプトユーティリティを適切に配置
+
 ## [1.1.2] - 2025-11-20
 
 ### Fixed
