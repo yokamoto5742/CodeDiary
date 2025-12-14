@@ -32,19 +32,29 @@ class OpenAIAPIClient(BaseAPIClient):
                     {"role": "system", "content": "あなたは経験豊富なソフトウェア開発者です。"},
                     {"role": "user", "content": prompt}
                 ],
-                max_completion_tokens=4096,
+                max_completion_tokens=8092,
             )
 
-            if response.choices and response.choices[0].message.content:
-                summary_text = response.choices[0].message.content
-            else:
-                summary_text = "レスポンスが空です"
+            if not response.choices:
+                raise APIError(
+                    f"OpenAI APIからの応答が空です (finish_reason不明)"
+                )
 
+            choice = response.choices[0]
+            if not choice.message.content:
+                raise APIError(
+                    f"OpenAI APIレスポンスにテキストがありません "
+                    f"(finish_reason={choice.finish_reason})"
+                )
+
+            summary_text = choice.message.content
             input_tokens = response.usage.prompt_tokens if response.usage else 0
             output_tokens = response.usage.completion_tokens if response.usage else 0
 
             return summary_text, input_tokens, output_tokens
 
+        except APIError:
+            raise
         except Exception as e:
             if "quota" in str(e).lower() or "billing" in str(e).lower():
                 raise APIError(MESSAGES["OPENAI_API_QUOTA_EXCEEDED"])

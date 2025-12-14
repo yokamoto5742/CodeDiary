@@ -25,22 +25,35 @@ class ClaudeAPIClient(BaseAPIClient):
     def generate_content(self, prompt: str, model_name: str) -> Tuple[str, int, int]:
         if self.client is None:
             raise APIError("Claude APIクライアントが初期化されていません")
-        response = self.client.messages.create(
-            model=model_name,
-            max_tokens=6000, # 最大出力トークン数
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
-        )
 
-        if response.content:
-            content_block = response.content[0]
-            if hasattr(content_block, 'text'):
-                summary_text = content_block.text  # type: ignore
-            else:
-                summary_text = "レスポンスが空です"
+        try:
+            response = self.client.messages.create(
+                model=model_name,
+                max_tokens=8092,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ]
+            )
+        except Exception as e:
+            raise APIError(f"Claude API呼び出しエラー: {str(e)}")
+
+        # レスポンスのstop_reasonを確認
+        if response.stop_reason == "error":
+            raise APIError(f"Claude APIがエラーを返しました: stop_reason={response.stop_reason}")
+
+        if not response.content:
+            raise APIError(
+                f"Claude APIからの応答が空です (stop_reason={response.stop_reason})"
+            )
+
+        content_block = response.content[0]
+        if hasattr(content_block, 'text') and content_block.text:
+            summary_text = content_block.text
         else:
-            summary_text = "レスポンスが空です"
+            raise APIError(
+                f"Claude APIレスポンスにテキストがありません "
+                f"(type={type(content_block).__name__}, stop_reason={response.stop_reason})"
+            )
 
         input_tokens = response.usage.input_tokens
         output_tokens = response.usage.output_tokens
