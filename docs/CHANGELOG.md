@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## [Unreleased]
+
+## [1.1.4] - 2025-12-15
+
+### Changed
+- **APIエラーハンドリングの強化**: Claude API と OpenAI API のエラー処理を改善
+  - `external_service/claude_api.py`: レスポンスの空チェック、エラー原因の詳細化
+  - `external_service/openai_api.py`: レスポンス検証ロジックを厳格化、エラーメッセージを充実
+
+### Fixed
+- **最大トークン数の調整**: Claude API と OpenAI API の max_completion_tokens を 8000 に統一
+  - Claude: 6000 → 8000 に変更
+  - OpenAI: 4096 → 8000 に変更
+
 ## [1.1.3] - 2025-11-30
 
 ### Added
