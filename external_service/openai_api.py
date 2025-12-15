@@ -32,7 +32,7 @@ class OpenAIAPIClient(BaseAPIClient):
                     {"role": "system", "content": "あなたは経験豊富なソフトウェア開発者です。"},
                     {"role": "user", "content": prompt}
                 ],
-                max_completion_tokens=8092,
+                max_completion_tokens=8000,
             )
 
             if not response.choices:

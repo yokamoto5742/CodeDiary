@@ -29,7 +29,7 @@ class ClaudeAPIClient(BaseAPIClient):
         try:
             response = self.client.messages.create(
                 model=model_name,
-                max_tokens=8092,
+                max_tokens=8000,
                 messages=[
                     {"role": "user", "content": prompt}
                 ]
