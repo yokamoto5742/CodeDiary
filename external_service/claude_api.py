@@ -1,4 +1,5 @@
 from anthropic import Anthropic
+from anthropic.types import TextBlock
 from typing import Tuple, Optional
 
 from external_service.base_api import BaseAPIClient
@@ -47,7 +48,7 @@ class ClaudeAPIClient(BaseAPIClient):
             )
 
         content_block = response.content[0]
-        if hasattr(content_block, 'text') and content_block.text:
+        if isinstance(content_block, TextBlock) and content_block.text:
             summary_text = content_block.text
         else:
             raise APIError(
