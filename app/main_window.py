@@ -46,10 +46,18 @@ class CodeDiaryMainWindow:
         """ウィンドウレイアウトと各ウィジェットを初期化"""
         window_width = self.config.get('WindowSettings', 'window_width', fallback='600')
         window_height = self.config.get('WindowSettings', 'window_height', fallback='600')
+        window_x = self.config.get('WindowSettings', 'window_x', fallback='')
+        window_y = self.config.get('WindowSettings', 'window_y', fallback='')
 
         self.root.title(f"CodeDiary v{__version__}")
-        self.root.geometry(f"{window_width}x{window_height}")
+
+        if window_x and window_y:
+            self.root.geometry(f"{window_width}x{window_height}+{window_x}+{window_y}")
+        else:
+            self.root.geometry(f"{window_width}x{window_height}")
+
         self.root.resizable(True, True)
+        self.root.protocol("WM_DELETE_WINDOW", self._on_closing)
 
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.grid(row=0, column=0, sticky="wens")
@@ -276,3 +284,21 @@ class CodeDiaryMainWindow:
     def _set_buttons_state(self, enabled):
         """操作ボタンの有効/無効を切り替え"""
         self.control_buttons_widget.set_buttons_state(enabled)
+
+    def _on_closing(self):
+        """ウィンドウを閉じる前にウィンドウ位置を保存"""
+        try:
+            window_x = self.root.winfo_x()
+            window_y = self.root.winfo_y()
+
+            if not self.config.has_section('WindowSettings'):
+                self.config.add_section('WindowSettings')
+
+            self.config.set('WindowSettings', 'window_x', str(window_x))
+            self.config.set('WindowSettings', 'window_y', str(window_y))
+
+            save_config(self.config)
+        except Exception as e:
+            print(f"ウィンドウ位置の保存中にエラーが発生しました: {e}")
+        finally:
+            self.root.quit()

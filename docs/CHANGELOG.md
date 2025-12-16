@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+- **TextBlock型チェック機能**: Claude APIでのレスポンス処理を強化
+  - `external_service/claude_api.py`: TextBlock型の検証ロジックを追加
+
+### Changed
+- **コピーボタンの制御ロジック整理**: メイン画面とウィジェットのコピーボタン動作を最適化
+  - `app/main_window.py`, `widgets/diary_content_widget.py`: ボタン制御フローを統一
+
 ## [1.1.4] - 2025-12-15
 
 ### Changed
