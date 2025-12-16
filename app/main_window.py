@@ -96,7 +96,6 @@ class CodeDiaryMainWindow:
 
     def _setup_bindings(self):
         """キーバインドを設定"""
-        self.root.bind('<Control-c>', lambda e: self._copy_all_text())
         self.root.bind('<Control-l>', lambda e: self._clear_text())
 
     def _validate_dates(self, since_date=None, until_date=None):
@@ -218,7 +217,6 @@ class CodeDiaryMainWindow:
             self.progress_widget.set_completion_message(input_tokens, output_tokens, model_name)
 
             self._set_buttons_state(True)
-            self.control_buttons_widget.set_copy_button_state(True)
 
             launch_form_page()
 
@@ -251,7 +249,6 @@ class CodeDiaryMainWindow:
     def _clear_text(self):
         """日誌内容をリセットし、UI状態を初期化"""
         self.diary_content_widget.clear_content()
-        self.control_buttons_widget.set_copy_button_state(False)
         self.progress_widget.clear_message()
 
     def _setup_repository(self):

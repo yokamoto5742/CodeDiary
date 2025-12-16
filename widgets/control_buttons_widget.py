@@ -37,8 +37,7 @@ class ControlButtonsWidget(ttk.Frame):
         self.copy_button = ttk.Button(
             self,
             text="コピー",
-            command=self._on_copy_text,
-            state=tk.DISABLED
+            command=self._on_copy_text
         )
         self.copy_button.grid(row=0, column=2, padx=(0, 5))
 
