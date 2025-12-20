@@ -33,7 +33,6 @@ nodeenv==1.9.1
 openai==1.99.5
 packaging==25.0
 pefile==2023.2.7
-playwright==1.54.0
 pluggy==1.6.0
 proto-plus==1.26.1
 protobuf==5.29.5
