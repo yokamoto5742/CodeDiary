@@ -101,8 +101,18 @@ UIから以下の操作を実行：
 
 ```ini
 [AI]
-provider = claude          # メインプロバイダー: claude, openai, gemini
+provider = gemini          # メインプロバイダー: claude, openai, gemini
 fallback_provider = gemini # フォールバック先
+```
+
+#### Git・GitHub設定
+
+```ini
+[GIT]
+repository_path = C:/Users/your_name/path/to/repository
+
+[GITHUB]
+enable_cross_repo_tracking = true  # 複数リポジトリの横断取得を有効化
 ```
 
 #### Google Form設定
@@ -119,11 +129,17 @@ form_url = https://forms.gle/your_form_id
 font = メイリオ
 font_size = 11
 
+[UI]
+calendar_background = darkblue      # カレンダー背景色
+calendar_foreground = white          # カレンダーテキスト色
+calendar_select_background = gray80  # カレンダー選択背景色
+calendar_select_foreground = black   # カレンダー選択テキスト色
+
 [WindowSettings]
 window_width = 800
 window_height = 600
-window_x = 100           # ウィンドウX位置（自動保存）
-window_y = 100           # ウィンドウY位置（自動保存）
+window_x = 648    # ウィンドウX位置（自動保存）
+window_y = 64     # ウィンドウY位置（自動保存）
 
 [Chrome]
 chrome_path = C:\Program Files\Google\Chrome\Application\chrome.exe
@@ -193,63 +209,65 @@ CodeDiaryはモジュール化されたMVC風アーキテクチャを採用し�
 
 Tkinterを使用したUIコンポーネント：
 
-- **MainWindow**: アプリケーション全体のレイアウト管理とイベント処理
+- **CodeDiaryMainWindow** (`app/main_window.py`): アプリケーション全体のレイアウト管理とイベント処理
 - **DateSelectionWidget**: カレンダーベースの日付範囲選択
 - **DiaryContentWidget**: 生成された日誌の表示とクリップボード操作
-- **ControlButtonsWidget**: アクション実行ボタン
-- **ProgressWidget**: タスク進捗の表示
+- **ControlButtonsWidget**: 日誌生成・Google Form送信ボタン
+- **ProgressWidget**: タスク進捗表示
 
 #### ビジネスロジック層（`service/`）
 
-- **ProgrammingDiaryGenerator**: Gitコミット履歴とAI統合による日誌生成
-- **GitCommitHistoryService**: Gitコマンド実行とコミット履歴抽出
+- **ProgrammingDiaryGenerator**: Gitコミット履歴とAI統合による日誌生成（プロンプト基づく構造化生成）
+- **GitCommitHistoryService**: Gitコマンド実行とコミット履歴抽出（日付フィルタリング対応）
 - **GitHubCommitTracker**: GitHub APIを使用した複数リポジトリの横断取得
-- **GoogleFormLauncher**: Googleフォームの起動
+- **GoogleFormLauncher**: Google Form立ち上げ
 
 #### AI統合層（`external_service/`）
 
-Factory Patternを使用した複数AIプロバイダーの抽象化：
+Factory Patternを使用した複数AIプロバイダーの動的選択と自動フォールバック：
 
 ```python
-# 動的なプロバイダー選択
-client = APIFactory.create_client("claude")  # "openai", "gemini"も可
+# プロバイダーの動的選択
+client = APIFactory.create_client("gemini")  # "claude", "openai"も可能
 client.initialize()
 content, input_tokens, output_tokens = client.generate_content(
     prompt="...",
-    model_name="claude-3-5-haiku-20241022"
+    model_name="gemini-2.0-flash-exp"
 )
 ```
 
-- **BaseAPIClient**: 共通インターフェース定義
-- **ClaudeAPI**: Anthropic Claude統合
-- **OpenAIAPI**: OpenAI GPT統合
-- **GeminiAPI**: Google Gemini統合
+- **BaseAPIClient**: 共通インターフェース定義（`initialize()`、`generate_content()`）
+- **ClaudeAPIClient**: Anthropic Claude API統合
+- **OpenAIAPIClient**: OpenAI GPT API統合
+- **GeminiAPIClient**: Google Gemini API統合
 
 #### 設定管理層（`utils/`）
 
-- **ConfigManager**: `config.ini`とINI設定ファイル管理
-- **EnvLoader**: `.env`ファイルの環境変数読み込み
-- **RepositoryNameExtractor**: リポジトリ名抽出ユーティリティ
+- **ConfigManager**: `config.ini`の統合管理（AI設定、UI設定、Git/GitHub設定）
+- **EnvLoader**: `.env`ファイルからのAPIキーと環境変数読み込み
+- **RepositoryNameExtractor**: Gitリポジトリ名抽出ユーティリティ
+- **PromptTemplate** (`prompt_template.md`): AI生成プロンプト形式定義
 
 ### デザインパターン
 
-1. **Factory Pattern**: `external_service/api_factory.py`でAIプロバイダーを動的に選択
-2. **Template Method**: 日誌生成ワークフローの標準化
-3. **Strategy Pattern**: 複数AIプロバイダーが共通インターフェースを実装
-4. **Configuration Management**: 環境変数とINI設定の統合管理
+1. **Factory Pattern**: `external_service/api_factory.py`でAIプロバイダーを動的に選択・生成
+2. **Template Method**: 日誌生成ワークフローの標準化（コミット取得→AI処理→形式化）
+3. **Strategy Pattern**: 複数AIプロバイダーが共通インターフェース実装
+4. **Configuration Management**: 環境変数とINI設定の統合管理（`config_manager.py`）
+5. **Abstract Base Class**: Gitサービス基盤（`BaseCommitService`）で統一的なコミット処理
 
 ## 主要機能の詳細
 
 ### ProgrammingDiaryGeneratorクラス
 
-Gitコミット履歴をAIで解析して構造化された日誌を生成します。
+Gitコミット履歴をAIで解析して、`prompt_template.md`の形式に基づいて構造化された日誌を生成します。
 
 ```python
 from service.programming_diary_generator import ProgrammingDiaryGenerator
 
 generator = ProgrammingDiaryGenerator()
 
-# ローカルGitコミット履歴から生成
+# ローカルGitコミット履歴から生成（UIから呼び出される標準的な用法）
 diary, input_tokens, output_tokens = generator.generate_diary(
     since_date="2024-01-01",
     until_date="2024-01-07"
@@ -263,15 +281,29 @@ diary, input_tokens, output_tokens = generator.generate_diary(
 ```
 
 **パラメータ**:
-- `since_date`: 開始日付（ISO 8601形式）
+- `since_date`: 開始日付（ISO 8601形式、必須）
 - `until_date`: 終了日付（オプション、指定なしは当日）
-- `use_github`: True時はGitHub APIを使用
+- `use_github`: True時はGitHub APIを使用して全リポジトリから取得
 
-**戻り値**: (日誌テキスト, 入力トークン数, 出力トークン数)
+**戻り値**: `(日誌テキスト, 入力トークン数, 出力トークン数)`
+
+**日誌形式**:
+生成された日誌は以下の構造：
+```
+yyyy年m月d日(曜日)
+リポジトリ名
+カテゴリ（機能追加、バグ修正など）
+1.概要
+（概要文）
+2.変更ファイル
+（ファイルリスト）
+3.詳細
+（詳細説明）
+```
 
 ### GitCommitHistoryServiceクラス
 
-Gitコマンドを使用してコミット履歴を取得します。
+Gitコマンドを実行してコミット履歴を日付範囲で抽出します。`BaseCommitService`を継承し、UTCから日本時間への自動変換に対応。
 
 ```python
 from service.git_commit_history import GitCommitHistoryService
@@ -284,33 +316,49 @@ commits = service.get_commit_history(
 )
 ```
 
-**返り値**: コミット情報の辞書リスト
+**返り値**: 以下の構造を持つコミット辞書のリスト：
+```python
+{
+    'hash': 'abc123...',        # コミットハッシュ
+    'author_name': '著者名',      # コミット著者
+    'author_email': 'email@...',  # メールアドレス
+    'timestamp': '2024-01-01T...(JST)',  # 日本時間タイムスタンプ
+    'message': 'コミットメッセージ',  # コミットメッセージ
+    'repository': 'リポジトリ名'  # リポジトリ名（オプション）
+}
+```
 
 ### APIFactory（AI統合）
 
-複数のAIプロバイダーを統一インターフェースで利用：
+複数のAIプロバイダーを統一インターフェースで利用。Factory Patternで動的にクライアントを生成：
 
 ```python
 from external_service.api_factory import APIFactory
 
-# プロバイダーの選択（config.iniから読み込みが基本）
-client = APIFactory.create_client("claude")
+# プロバイダー指定でクライアント生成（通常はconfig.iniから読み込み）
+client = APIFactory.create_client("gemini")  # "claude", "openai"も可
 client.initialize()
 
-# コンテンツ生成
+# AIによるコンテンツ生成
 content, input_tokens, output_tokens = client.generate_content(
     prompt="プロンプトテキスト",
-    model_name="claude-3-5-haiku-20241022"
+    model_name="gemini-2.0-flash-exp"
 )
 
-# エラーハンドリングと自動フォールバック
-if client is None:
-    print("別のプロバイダーへの自動切り替えが実行されます")
+# 返り値
+# content: 生成されたテキスト
+# input_tokens: 入力トークン数
+# output_tokens: 出力トークン数
 ```
+
+**対応プロバイダー**:
+- `claude`: Anthropic Claude API（デフォルトモデル: claude-3-5-haiku-20241022）
+- `openai`: OpenAI GPT API（デフォルトモデル: gpt-4o-mini）
+- `gemini`: Google Gemini API（デフォルトモデル: gemini-2.0-flash-exp）
 
 ### GoogleFormLauncher
 
-生成された日誌をGoogle Formに自動入力：
+Google Formを立ち上げる：
 
 ```python
 from service.launch_form_page import launch_form_page
@@ -318,7 +366,13 @@ from service.launch_form_page import launch_form_page
 launch_form_page(diary_content)
 ```
 
-ChromeとPlaywrightを使用してフォームを自動入力します。
+### AIプロンプト形式
+
+生成AIへ送信するプロンプトは、`utils/prompt_template.md`で定義されており、以下の構成で日誌を生成します：
+
+- **日付別整理**: 作業日ごとにセクション分け、リポジトリ名明記
+- **カテゴリ分類**: 機能追加、バグ修正、UI改善、リファクタリング、テスト、ドキュメント、設定構成など
+- **出力形式**: 日付、リポジトリ名、カテゴリ、概要、変更ファイル、詳細を階層化
 
 ## 開発者向け情報
 
@@ -382,14 +436,17 @@ CLAUDE.mdに記載されたPythonコード規約に従ってください：
 
 1. `external_service/`に新規ファイル作成（例: `your_api.py`）
 2. `BaseAPIClient`を継承してクラス定義
-3. `generate_content`メソッドを実装
-4. `api_factory.py`の`APIProvider`列挙型と`create_client`メソッドに追加
+3. 以下のメソッドを実装：
+   - `initialize()`: APIキー検証など初期化処理
+   - `generate_content(prompt, model_name)`: テキスト生成処理（`(content, input_tokens, output_tokens)`を返す）
+4. `api_factory.py`の`APIProvider`列挙型に新プロバイダーを追加
+5. `create_client`メソッドの`client_mapping`に新クライアントを追加
 
 #### UIウィジェット追加
 
 1. `widgets/`フォルダに新規ウィジェット作成
-2. `main_window.py`で統合
-3. レイアウト管理（grid、pack等）を実装
+2. `app/main_window.py`の`_setup_ui()`で統合
+3. Tkinterのレイアウト管理（grid、pack等）で配置
 
 #### テストの追加
 
@@ -405,50 +462,71 @@ def test_your_feature():
     assert result is not None
 ```
 
+実行：
+```bash
+pytest tests/test_your_service.py -v
+```
+
 ## トラブルシューティング
 
-### APIキーエラー
+### APIプロバイダーエラー（APIError: 未対応のAPIプロバイダー）
 
-```
-APIError: 未対応のAPIプロバイダー
-```
+**原因**: `.env`ファイルが見つからない、またはAPIキーが未設定
 
 **解決策**:
-- `.env`ファイルがプロジェクトルートに配置されているか確認
-- 少なくとも1つのAPIキーが有効か確認
-- `config.ini`の`provider`設定値が正しいか確認（claude、openai、gemini）
+1. プロジェクトルートに`.env`ファイルを作成
+2. 以下のいずれかのAPIキーを設定：
+   ```env
+   CLAUDE_API_KEY=your_key
+   OPENAI_API_KEY=your_key
+   GEMINI_API_KEY=your_key
+   ```
+3. `config.ini`の`[AI]`セクション設定を確認（provider = claude/openai/gemini）
+4. 開発支援スクリプトで確認：`python scripts/APIsetting_check.py`
 
 ### Gitコミット履歴が取得できない
 
+**原因**: リポジトリパスが不正またはGitが未インストール
+
 **解決策**:
-- リポジトリパスが正しいか確認
-- Gitがインストール済みか確認（`git --version`実行）
-- リポジトリへの読み取り権限を確認
+1. `config.ini`の`[GIT]`セクションでリポジトリパスを確認
+2. Gitがインストール済みか確認：`git --version`
+3. リポジトリフォルダのアクセス権限を確認
+4. コマンドラインで直接実行確認：`git log --since="2024-01-01" --until="2024-01-31"`
 
 ### Google Formが起動しない
 
-**解決策**:
-- Google Chromeのインストール確認
-- `config.ini`の`chrome_path`が正しいか確認
+**原因**: Chromeがインストールされていない、またはパスが不正
 
+**解決策**:
+1. Google Chromeをインストール
+2. `config.ini`の`[Chrome]`セクションで`chrome_path`を確認
+   - Windows標準インストール: `C:\Program Files\Google\Chrome\Application\chrome.exe`
+3. Chromeのパスが正しいか確認：`dir "C:\Program Files\Google\Chrome\Application\"`
 
 ### 日本語が文字化けする
 
+**原因**: フォント設定またはロケール設定の問題
+
 **解決策**:
-- システムロケール設定を確認
-- `config.ini`の`font`設定を確認（メイリオなど）
-- Pythonファイルの先頭に`# -*- coding: utf-8 -*-`が記載されているか確認
+1. `config.ini`の`[DiaryText]`セクションでフォント設定を確認
+   - 推奨: `font = メイリオ`（Windows標準日本語フォント）
+2. 代替フォント：`MS ゴシック`、`Yu Gothic`
+3. Pythonファイルエンコーディング確認（通常UTF-8で自動処理）
 
 ### メモリ使用量が多い
 
+**原因**: 大量のコミット履歴の処理またはAIプロバイダーのレスポンス待機
+
 **解決策**:
-- 大量のコミット履歴を処理する場合は日付範囲を絞って実行
-- AIプロバイダーのレスポンスタイムアウト設定を確認
+1. 日付範囲を絞って実行（例：1週間単位）
+2. 大規模リポジトリの場合は特定著者で絞る（開発ツール機能）
+3. AIプロバイダーのタイムアウト設定を調整
 
 ## バージョン情報
 
 - **現在のバージョン**: 1.1.6
-- **最終更新**: 2025年12月15日
+- **最終更新**: 2025年12月21日
 
 ### 主な変更点
 

@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+## [1.1.6] - 2025-12-21
+
+### Added
+- **開発ツール設定強化**: Pyright 型チェック設定を拡張
+  - `pyrightconfig.json`: reportPrivateImportUsage 設定を追加
+
+### Changed
+- **デフォルトAIプロバイダーの変更**: Gemini を新規デフォルトプロバイダーに設定
+  - `utils/config.ini`: デフォルトプロバイダーを Claude から Gemini に変更
+- **Gemini API設定の最適化**: 不要な設定とインポートを削除
+  - `external_service/gemini_api.py`: コード品質を向上
+
+### Removed
+- **Google Form自動入力スクリプトの削除**: 古いスクリプトを整理
+  - `scripts/google_form_automation.py`: 不要になったスクリプトを削除
+
 ## [1.1.5] - 2025-12-16
 
 ### Added
