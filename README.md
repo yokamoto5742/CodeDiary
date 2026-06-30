@@ -146,7 +146,7 @@ Tkinterを使用したUIコンポーネント：
 #### AI統合層（`external_service/`）
 
 ```python
-client = APIFactory.create_client("gemini")
+client = GeminiAPIClient()
 client.initialize()
 content, input_tokens, output_tokens = client.generate_content(
     prompt="...",
@@ -154,8 +154,7 @@ content, input_tokens, output_tokens = client.generate_content(
 )
 ```
 
-- **BaseAPIClient**: 共通インターフェース定義（`initialize()`、`generate_content()`）
-- **GeminiAPIClient**: Google Gemini API統合
+- **GeminiAPIClient**: Google Gemini API統合（`initialize()`、`generate_content()`）
 
 #### 設定管理層（`utils/`）
 
@@ -208,15 +207,9 @@ python build.py
 
 ### 拡張方法
 
-#### 新しいAIプロバイダーの追加
+#### AIモデルの変更
 
-1. `external_service/`に新規ファイル作成（例: `your_api.py`）
-2. `BaseAPIClient`を継承してクラス定義
-3. 以下のメソッドを実装：
-   - `initialize()`: APIキー検証など初期化処理
-   - `generate_content(prompt, model_name)`: テキスト生成処理（`(content, input_tokens, output_tokens)`を返す）
-4. `api_factory.py`の`APIProvider`列挙型に新プロバイダーを追加
-5. `create_client`メソッドの`client_mapping`に新クライアントを追加
+`.env`の`GEMINI_MODEL`を変更することで使用するGeminiモデルを切り替えられます。API呼び出しの実装は`external_service/gemini_api.py`の`GeminiAPIClient`に集約されています。
 
 ## トラブルシューティング
 

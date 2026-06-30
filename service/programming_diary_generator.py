@@ -1,50 +1,38 @@
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple, Any
+from typing import Dict, List, Optional, Tuple
 
-from external_service.api_factory import APIFactory
+from external_service.gemini_api import GeminiAPIClient
 from service.github_commit_tracker import GitHubCommitTracker
-from utils.config_manager import get_active_provider, get_provider_credentials, load_config,get_ai_provider_config, get_available_providers
+from utils.config_manager import load_config
 from utils.env_loader import load_environment_variables
 
 
 class ProgrammingDiaryGenerator:
-    """Gitコミット履歴から生成AIモデルを使用して日誌を生成"""
+    """Gitコミット履歴からGeminiを使用して日誌を生成"""
     def __init__(self):
         load_environment_variables()
         self.config = load_config()
-        self.ai_provider: Optional[str] = None
-        self.ai_client: Any = None
+        self.ai_client: Optional[GeminiAPIClient] = None
         self.prompt_template_path = self._get_prompt_template_path()
         self.jst = timezone(timedelta(hours=9))
         self.default_model: Optional[str] = None
-        self._initialize_ai_provider()
+        self._initialize_ai_client()
 
     def _get_prompt_template_path(self) -> str:
         """プロンプトテンプレートファイルのパスを取得"""
         base_path = Path(__file__).parent.parent
         return str(base_path / "utils" / "prompt_template.md")
 
-    def _initialize_ai_provider(self):
-        """設定から優先AIプロバイダーを初期化"""
+    def _initialize_ai_client(self):
+        """Geminiクライアントを初期化"""
         try:
-            self.ai_provider = get_active_provider()
-            print(f"使用するAIプロバイダー: {self.ai_provider}")
-
-            self.ai_client = APIFactory.create_client(self.ai_provider)
-
-            credentials = get_provider_credentials(self.ai_provider)
-            if self.ai_client is not None:
-                if credentials:
-                    self.default_model = credentials.get('model', self.ai_client.default_model)
-                else:
-                    self.default_model = self.ai_client.default_model
-
-                print(f"使用するモデル: {self.default_model}")
-
+            self.ai_client = GeminiAPIClient()
+            self.default_model = self.ai_client.default_model
+            print(f"使用するモデル: {self.default_model}")
         except Exception as e:
-            print(f"AIプロバイダーの初期化でエラーが発生しました: {e}")
+            print(f"AIクライアントの初期化でエラーが発生しました: {e}")
             raise
 
     def _load_prompt_template(self) -> str:
@@ -103,31 +91,6 @@ class ProgrammingDiaryGenerator:
 
         return plain_text.strip()
 
-    def _try_fallback_provider(self, since_date: Optional[str], until_date: Optional[str], days: Optional[int], original_error: Exception):
-        """プロバイダーエラー時にフォールバックプロバイダーで再試行"""
-        try:
-            config = get_ai_provider_config()
-            available_providers = get_available_providers()
-            fallback_provider = config.get('fallback_provider')
-
-            if fallback_provider and available_providers.get(fallback_provider, False):
-                print(
-                    f"⚠️ メインプロバイダーでエラーが発生しました。フォールバックプロバイダー '{fallback_provider}' を試行します...")
-
-                self.ai_provider = fallback_provider
-                self.ai_client = APIFactory.create_client(fallback_provider)
-                credentials = get_provider_credentials(fallback_provider)
-                if self.ai_client is not None and credentials:
-                    self.default_model = credentials.get('model', self.ai_client.default_model)
-
-                return self.generate_diary(since_date, until_date, days)
-            else:
-                raise Exception(f"プロバイダーエラー (フォールバック不可): {original_error}")
-
-        except Exception as fallback_error:
-            raise Exception(
-                f"プログラミング日記の生成に失敗しました。\n元のエラー: {original_error}\nフォールバックエラー: {fallback_error}")
-
     def generate_diary(self,
                        since_date: Optional[str] = None,
                        until_date: Optional[str] = None,
@@ -143,7 +106,6 @@ class ProgrammingDiaryGenerator:
                 until_date = (datetime.now(self.jst) + timedelta(days=1)).strftime('%Y-%m-%d')
 
             print(f"🔍 デバッグ情報:")
-            print(f"   AIプロバイダー: {self.ai_provider}")
             print(f"   使用モデル: {self.default_model}")
             print(f"   データソース: GitHub API (複数リポジトリ)")
 
@@ -183,6 +145,4 @@ class ProgrammingDiaryGenerator:
             return project_diary, input_tokens, output_tokens, self.default_model
 
         except Exception as e:
-            return self._try_fallback_provider(
-                since_date, until_date, days, e
-            )
+            raise Exception(f"プログラミング日記の生成に失敗しました: {e}")

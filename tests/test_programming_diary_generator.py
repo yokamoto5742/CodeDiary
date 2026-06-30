@@ -52,9 +52,7 @@ class TestProgrammingDiaryGenerator:
         """ProgrammingDiaryGeneratorのインスタンス作成"""
         with patch('service.programming_diary_generator.load_environment_variables'), \
              patch('service.programming_diary_generator.load_config', return_value=mock_config), \
-             patch('service.programming_diary_generator.get_active_provider', return_value='claude'), \
-             patch('service.programming_diary_generator.APIFactory.create_client', return_value=mock_ai_client), \
-             patch('service.programming_diary_generator.get_provider_credentials', return_value={'model': 'test-model'}), \
+             patch('service.programming_diary_generator.GeminiAPIClient', return_value=mock_ai_client), \
              patch.object(Path, 'parent', Path('/mock/path')):
 
             generator = ProgrammingDiaryGenerator()
@@ -64,23 +62,20 @@ class TestProgrammingDiaryGenerator:
         """正常な初期化のテスト"""
         with patch('service.programming_diary_generator.load_environment_variables'), \
              patch('service.programming_diary_generator.load_config', return_value=mock_config), \
-             patch('service.programming_diary_generator.get_active_provider', return_value='claude'), \
-             patch('service.programming_diary_generator.APIFactory.create_client', return_value=mock_ai_client), \
-             patch('service.programming_diary_generator.get_provider_credentials', return_value={'model': 'test-model'}), \
+             patch('service.programming_diary_generator.GeminiAPIClient', return_value=mock_ai_client), \
              patch.object(Path, 'parent', Path('/mock/path')):
 
             generator = ProgrammingDiaryGenerator()
 
-            assert generator.ai_provider == 'claude'
             assert generator.ai_client == mock_ai_client
             assert generator.default_model == 'test-model'
             assert generator.jst == timezone(timedelta(hours=9))
 
-    def test_init_provider_initialization_error(self, mock_config):
-        """AIプロバイダー初期化エラーのテスト"""
+    def test_init_ai_client_initialization_error(self, mock_config):
+        """AIクライアント初期化エラーのテスト"""
         with patch('service.programming_diary_generator.load_environment_variables'), \
              patch('service.programming_diary_generator.load_config', return_value=mock_config), \
-             patch('service.programming_diary_generator.get_active_provider', side_effect=Exception("Provider error")):
+             patch('service.programming_diary_generator.GeminiAPIClient', side_effect=Exception("Client error")):
 
             with pytest.raises(Exception):
                 ProgrammingDiaryGenerator()
@@ -234,61 +229,9 @@ print("コードブロック")
 
     def test_generate_diary_ai_client_error(self, generator, mock_ai_client):
         """AIクライアントエラー時のテスト"""
-        # モックの準備
         mock_ai_client.initialize.side_effect = Exception("AI client error")
         mock_template = "テスト用プロンプトテンプレート"
-        
-        with patch.object(generator, '_load_prompt_template', return_value=mock_template), \
-             patch.object(generator, '_try_fallback_provider', side_effect=Exception("Fallback failed")):
-            
-            # テスト実行と検証
-            with pytest.raises(Exception):
-                generator.generate_diary()
 
-    def test_try_fallback_provider_success(self, generator):
-        """フォールバックプロバイダーの正常系テスト"""
-        mock_fallback_client = Mock()
-        mock_fallback_client.default_model = 'fallback-model'
-        mock_fallback_client.generate_content.return_value = ("fallback diary", 50, 100)
-
-        with patch('service.programming_diary_generator.get_ai_provider_config', return_value={'fallback_provider': 'openai'}), \
-             patch('service.programming_diary_generator.get_available_providers', return_value={'openai': True}), \
-             patch('service.programming_diary_generator.APIFactory.create_client', return_value=mock_fallback_client), \
-             patch('service.programming_diary_generator.get_provider_credentials', return_value={'model': 'fallback-model'}), \
-             patch.object(generator, 'generate_diary', return_value=("fallback diary", 50, 100, "fallback-model")):
-
-            result = generator._try_fallback_provider(
-                since_date="2024-01-01",
-                until_date="2024-01-02",
-                days=None,
-                original_error="Original error"
-            )
-
-            assert result == ("fallback diary", 50, 100, "fallback-model")
-
-    def test_try_fallback_provider_no_fallback_available(self, generator):
-        """フォールバックプロバイダーが利用できない場合のテスト"""
-        with patch('service.programming_diary_generator.get_ai_provider_config', return_value={'fallback_provider': 'unavailable'}), \
-             patch('service.programming_diary_generator.get_available_providers', return_value={'unavailable': False}):
-            
-            with pytest.raises(Exception, match="プロバイダーエラー \\(フォールバック不可\\)"):
-                generator._try_fallback_provider(
-                    since_date="2024-01-01",
-                    until_date="2024-01-02",
-                    days=None,
-                    original_error="Original error"
-                )
-
-    def test_try_fallback_provider_fallback_error(self, generator):
-        """フォールバックプロバイダーでもエラーが発生する場合のテスト"""
-        with patch('service.programming_diary_generator.get_ai_provider_config', return_value={'fallback_provider': 'openai'}), \
-             patch('service.programming_diary_generator.get_available_providers', return_value={'openai': True}), \
-             patch('service.programming_diary_generator.APIFactory.create_client', side_effect=Exception("Fallback creation error")):
-
+        with patch.object(generator, '_load_prompt_template', return_value=mock_template):
             with pytest.raises(Exception, match="プログラミング日記の生成に失敗しました"):
-                generator._try_fallback_provider(
-                    since_date="2024-01-01",
-                    until_date="2024-01-02",
-                    days=None,
-                    original_error="Original error"
-                )
+                generator.generate_diary()

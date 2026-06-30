@@ -19,10 +19,6 @@ def setup_test_environment():
     """テスト環境のセットアップ（セッション全体で一度だけ実行）"""
     # 環境変数のモック設定
     test_env_vars = {
-        'CLAUDE_API_KEY': 'test_claude_key',
-        'CLAUDE_MODEL': 'claude-3-haiku-20240307',
-        'OPENAI_API_KEY': 'test_openai_key', 
-        'OPENAI_MODEL': 'gpt-3.5-turbo',
         'GEMINI_API_KEY': 'test_gemini_key',
         'GEMINI_MODEL': 'gemini-1.5-flash',
         'GEMINI_THINKING_BUDGET': '1024'
@@ -68,8 +64,6 @@ def mock_config_basic():
     # デフォルト設定値
     config_values = {
         ('GIT', 'repository_path'): '/mock/repo/path',
-        ('AI', 'provider'): 'claude',
-        ('AI', 'fallback_provider'): 'openai',
         ('Chrome', 'chrome_path'): 'C:/Program Files/Google/Chrome/Application/chrome.exe',
         ('URL', 'form_url'): 'https://forms.gle/test123',
         ('WindowSettings', 'window_width'): '800',

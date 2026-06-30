@@ -2,15 +2,15 @@ from typing import Optional, Tuple
 
 from google import genai
 
-from external_service.base_api import BaseAPIClient
 from utils.config_manager import GEMINI_API_KEY, GEMINI_MODEL
 from utils.constants import MESSAGES
 from utils.exceptions import APIError
 
 
-class GeminiAPIClient(BaseAPIClient):
+class GeminiAPIClient:
     def __init__(self):
-        super().__init__(GEMINI_API_KEY, GEMINI_MODEL)
+        self.api_key: Optional[str] = GEMINI_API_KEY
+        self.default_model: Optional[str] = GEMINI_MODEL
         self.client: Optional[genai.Client] = None
 
     def initialize(self) -> bool:
