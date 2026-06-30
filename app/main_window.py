@@ -1,7 +1,7 @@
 import locale
 import os
 import threading
-from tkinter import messagebox, filedialog
+from tkinter import messagebox
 from tkinter import ttk
 
 from app import __version__
@@ -94,11 +94,9 @@ class CodeDiaryMainWindow:
         )
 
         self.control_buttons_widget.set_callbacks(
-            create_diary=self._create_diary,
             create_github_diary=self._create_github_diary,
             copy_text=self._copy_all_text,
             clear_text=self._clear_text,
-            setup_repository=self._setup_repository,
             close=self.root.quit
         )
 
@@ -106,42 +104,12 @@ class CodeDiaryMainWindow:
         """キーバインドを設定"""
         self.root.bind('<Control-l>', lambda e: self._clear_text())
 
-    def _validate_dates(self, since_date=None, until_date=None):
-        """日付の妥当性を検証 GitHub連携時と通常時で分岐処理"""
-        if since_date is not None and until_date is not None:
-            if since_date > until_date:
-                messagebox.showerror("エラー", "終了日より前の日付を選択してください。")
-                return False
-            return True
-        else:
-            is_valid, error_message = self.date_selection_widget.validate_dates()
-            if not is_valid:
-                messagebox.showerror("エラー", error_message)
-            return is_valid
-
-    def _create_diary(self):
-        """ローカルGitリポジトリから日誌を生成"""
-        try:
-            if not self._validate_dates():
-                return
-
-            self._set_buttons_state(False)
-            self.progress_widget.set_processing_message()
-
-            start_date = self.date_selection_widget.get_start_date().strftime('%Y-%m-%d')
-            end_date = self.date_selection_widget.get_end_date().strftime('%Y-%m-%d')
-
-            thread = threading.Thread(
-                target=self._generate_diary_thread,
-                args=(start_date, end_date)
-            )
-            thread.daemon = True
-            thread.start()
-
-        except Exception as e:
-            messagebox.showerror("エラー", f"日誌作成中にエラーが発生しました: {str(e)}")
-            self._set_buttons_state(True)
-            self.progress_widget.clear_message()
+    def _validate_dates(self, since_date, until_date):
+        """日付範囲の妥当性を検証"""
+        if since_date > until_date:
+            messagebox.showerror("エラー", "終了日より前の日付を選択してください。")
+            return False
+        return True
 
     def _create_github_diary(self):
         """GitHub APIから複数リポジトリのコミットを取得し日誌を生成"""
@@ -194,25 +162,11 @@ class CodeDiaryMainWindow:
         try:
             diary_content, input_tokens, output_tokens, model_name = self.diary_generator.generate_diary(
                 since_date=since_date,
-                until_date=until_date,
-                use_github=True
+                until_date=until_date
             )
             self.root.after(0, self._display_diary_result, diary_content, input_tokens, output_tokens, model_name)
         except Exception as e:
             self.root.after(0, self._schedule_error_display, str(e))
-
-    def _generate_diary_thread(self, start_date, end_date):
-        """ローカルGit日誌生成をスレッド内で実行"""
-        try:
-            diary_content, input_tokens, output_tokens, model_name = self.diary_generator.generate_diary(
-                since_date=start_date,
-                until_date=end_date
-            )
-
-            self.root.after(0, self._display_diary_result, diary_content, input_tokens, output_tokens, model_name)
-
-        except Exception as e:
-            self.root.after(0, self._display_error, str(e))
 
     def _display_diary_result(self, diary_content, input_tokens, output_tokens, model_name):
         """生成した日誌を画面に表示しクリップボードにコピー その後Chromeでフォームを開く"""
@@ -258,28 +212,6 @@ class CodeDiaryMainWindow:
         """日誌内容をリセットし、UI状態を初期化"""
         self.diary_content_widget.clear_content()
         self.progress_widget.clear_message()
-
-    def _setup_repository(self):
-        """Gitリポジトリパスの設定を更新"""
-        try:
-            current_path = self.config.get('GIT', 'repository_path', fallback='')
-            new_path = filedialog.askdirectory(
-                title="Gitリポジトリフォルダを選択",
-                initialdir=current_path if current_path else "."
-            )
-
-            if new_path:
-                if not self.config.has_section('GIT'):
-                    self.config.add_section('GIT')
-                self.config.set('GIT', 'repository_path', new_path)
-
-                save_config(self.config)
-                self.diary_generator = ProgrammingDiaryGenerator()
-
-                messagebox.showinfo("設定完了", f"リポジトリパスを更新しました:\n{new_path}")
-
-        except Exception as e:
-            messagebox.showerror("エラー", f"リポジトリ設定中にエラーが発生しました: {str(e)}")
 
     def _set_buttons_state(self, enabled):
         """操作ボタンの有効/無効を切り替え"""

@@ -18,22 +18,21 @@ class TestProgrammingDiaryGenerator:
         return mock_config
 
     @pytest.fixture
-    def mock_git_service(self):
-        """GitCommitHistoryServiceのモック"""
-        mock_service = Mock()
-        mock_service.get_repository_info.return_value = {
-            'current_branch': 'main',
-            'latest_commit': 'abc123 by Test User on 2024-01-01'
-        }
-        mock_service.get_commit_history.return_value = [
+    def mock_github_tracker(self):
+        """GitHubCommitTrackerのモック"""
+        mock_tracker = Mock()
+        mock_tracker.username = 'testuser'
+        commits = [
             {
                 'hash': 'abc123',
                 'author_name': 'Test User',
                 'timestamp': '2024-01-01T10:00:00+09:00',
-                'message': 'Initial commit'
+                'message': '[repo] Initial commit'
             }
         ]
-        return mock_service
+        mock_tracker.get_commits_for_diary_generation_range.return_value = commits
+        mock_tracker.get_commits_for_diary_generation.return_value = commits
+        return mock_tracker
 
     @pytest.fixture
     def mock_ai_client(self):
@@ -49,43 +48,40 @@ class TestProgrammingDiaryGenerator:
         return mock_client
 
     @pytest.fixture
-    def generator(self, mock_config, mock_git_service, mock_ai_client):
+    def generator(self, mock_config, mock_ai_client):
         """ProgrammingDiaryGeneratorのインスタンス作成"""
         with patch('service.programming_diary_generator.load_environment_variables'), \
              patch('service.programming_diary_generator.load_config', return_value=mock_config), \
-             patch('service.programming_diary_generator.GitCommitHistoryService', return_value=mock_git_service), \
              patch('service.programming_diary_generator.get_active_provider', return_value='claude'), \
              patch('service.programming_diary_generator.APIFactory.create_client', return_value=mock_ai_client), \
              patch('service.programming_diary_generator.get_provider_credentials', return_value={'model': 'test-model'}), \
              patch.object(Path, 'parent', Path('/mock/path')):
-            
+
             generator = ProgrammingDiaryGenerator()
             return generator
 
-    def test_init_success(self, mock_config, mock_git_service, mock_ai_client):
+    def test_init_success(self, mock_config, mock_ai_client):
         """正常な初期化のテスト"""
         with patch('service.programming_diary_generator.load_environment_variables'), \
              patch('service.programming_diary_generator.load_config', return_value=mock_config), \
-             patch('service.programming_diary_generator.GitCommitHistoryService', return_value=mock_git_service), \
              patch('service.programming_diary_generator.get_active_provider', return_value='claude'), \
              patch('service.programming_diary_generator.APIFactory.create_client', return_value=mock_ai_client), \
              patch('service.programming_diary_generator.get_provider_credentials', return_value={'model': 'test-model'}), \
              patch.object(Path, 'parent', Path('/mock/path')):
-            
+
             generator = ProgrammingDiaryGenerator()
-            
+
             assert generator.ai_provider == 'claude'
             assert generator.ai_client == mock_ai_client
             assert generator.default_model == 'test-model'
             assert generator.jst == timezone(timedelta(hours=9))
 
-    def test_init_provider_initialization_error(self, mock_config, mock_git_service):
+    def test_init_provider_initialization_error(self, mock_config):
         """AIプロバイダー初期化エラーのテスト"""
         with patch('service.programming_diary_generator.load_environment_variables'), \
              patch('service.programming_diary_generator.load_config', return_value=mock_config), \
-             patch('service.programming_diary_generator.GitCommitHistoryService', return_value=mock_git_service), \
              patch('service.programming_diary_generator.get_active_provider', side_effect=Exception("Provider error")):
-            
+
             with pytest.raises(Exception):
                 ProgrammingDiaryGenerator()
 
@@ -190,14 +186,12 @@ print("コードブロック")
         assert "斜体テキスト" in result
         assert "インラインコード" in result
 
-    @patch('service.programming_diary_generator.get_repository_directory_name')
-    def test_generate_diary_success(self, mock_get_repo_name, generator, mock_git_service, mock_ai_client):
+    def test_generate_diary_success(self, generator, mock_github_tracker, mock_ai_client):
         """日誌生成の正常系テスト"""
-        # モックの準備
-        mock_get_repo_name.return_value = "TestProject"
         mock_template = "テスト用プロンプトテンプレート"
 
-        with patch.object(generator, '_load_prompt_template', return_value=mock_template):
+        with patch.object(generator, '_load_prompt_template', return_value=mock_template), \
+             patch('service.programming_diary_generator.GitHubCommitTracker', return_value=mock_github_tracker):
             # テスト実行
             result, input_tokens, output_tokens, model_name = generator.generate_diary(
                 since_date="2024-01-01",
@@ -205,18 +199,17 @@ print("コードブロック")
             )
 
         # 検証
-        assert "TestProject" in result
+        assert "GitHub Account: testuser" in result
         assert input_tokens == 100
         assert output_tokens == 200
         assert model_name == 'test-model'
         mock_ai_client.initialize.assert_called_once()
         mock_ai_client.generate_content.assert_called_once()
-        mock_git_service.get_commit_history.assert_called_once_with(
-            since_date="2024-01-01",
-            until_date="2024-01-02"
+        mock_github_tracker.get_commits_for_diary_generation_range.assert_called_once_with(
+            "2024-01-01", "2024-01-02"
         )
 
-    def test_generate_diary_with_days_parameter(self, generator, mock_git_service, mock_ai_client):
+    def test_generate_diary_with_days_parameter(self, generator, mock_github_tracker, mock_ai_client):
         """days パラメータを使用した日誌生成のテスト"""
         mock_template = "テスト用プロンプトテンプレート"
 
@@ -225,7 +218,7 @@ print("コードブロック")
 
         with patch.object(generator, '_load_prompt_template', return_value=mock_template), \
              patch('service.programming_diary_generator.datetime') as mock_datetime, \
-             patch('service.programming_diary_generator.get_repository_directory_name', return_value="TestProject"):
+             patch('service.programming_diary_generator.GitHubCommitTracker', return_value=mock_github_tracker):
 
             mock_datetime.now.return_value = fixed_datetime
 
@@ -233,30 +226,10 @@ print("コードブロック")
             result, input_tokens, output_tokens, model_name = generator.generate_diary(days=7)
 
         # 検証
-        mock_git_service.get_commit_history.assert_called_once()
-        call_args = mock_git_service.get_commit_history.call_args
-        assert call_args[1]['since_date'] == "2024-01-08"  # 7日前
-        assert call_args[1]['until_date'] == "2024-01-16"   # 翌日
-        assert model_name == 'test-model'
-
-    @patch('service.programming_diary_generator.get_repository_directory_name')
-    def test_generate_diary_repository_name_error(self, mock_get_repo_name, generator, mock_ai_client):
-        """リポジトリ名取得エラーのテスト"""
-        # モックの準備
-        mock_get_repo_name.side_effect = Exception("Repository name error")
-        mock_template = "テスト用プロンプトテンプレート"
-
-        with patch.object(generator, '_load_prompt_template', return_value=mock_template):
-            # テスト実行（エラーは内部でキャッチされる）
-            result, input_tokens, output_tokens, model_name = generator.generate_diary(
-                since_date="2024-01-01",
-                until_date="2024-01-02"
-            )
-
-        # プロジェクト名なしでも結果が返されることを確認
-        assert result is not None
-        assert input_tokens == 100
-        assert output_tokens == 200
+        mock_github_tracker.get_commits_for_diary_generation_range.assert_called_once()
+        call_args = mock_github_tracker.get_commits_for_diary_generation_range.call_args
+        assert call_args[0][0] == "2024-01-08"  # 7日前
+        assert call_args[0][1] == "2024-01-16"   # 翌日
         assert model_name == 'test-model'
 
     def test_generate_diary_ai_client_error(self, generator, mock_ai_client):
