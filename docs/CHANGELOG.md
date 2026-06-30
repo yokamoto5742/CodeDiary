@@ -2,6 +2,37 @@
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-06-30
+
+### Added
+- **GitHubコミットトラッカー統合**: GitHub API経由でコミット履歴を直接取得し、ローカルGit依存を排除
+  - GitHubのリポジトリから複数コミット履歴を効率的に取得可能に
+  - GitHub認証情報の統合管理により、複数リポジトリの横断対応をサポート
+
+### Changed
+- **AIプロバイダーをGeminiのみに統一**: Gemini API に特化した実装へ簡潔化
+  - APIファクトリーパターンを削除し、単一プロバイダー実装に最適化
+  - 設定管理システムを簡略化
+  - `external_service/api_factory.py` と `external_service/base_api.py` を削除
+  - Gemini API 実装を直接統合
+- **google-generativeai から google-genai へ依存関係を更新**
+  - パッケージ管理を最新化
+
+### Removed
+- **Claude API 実装の削除**: Claude APIサポートを廃止
+  - `external_service/claude_api.py` を削除
+  - 関連する設定・テストを整理
+- **OpenAI API 実装の削除**: OpenAI APIサポートを廃止
+  - `external_service/openai_api.py` を削除
+  - 関連する設定・テストを整理
+- **複数プロバイダー対応コード**: 不要になったマルチプロバイダー対応ロジックを削除
+  - `utils/config_manager.py` の複雑な設定管理を排除
+  - テストスイートの不要なプロバイダー切り替えテストを削除
+- **ローカルGit依存処理**: ローカルGit操作の複雑なロジックを削除
+  - `service/git_commit_history.py` のローカルGit実装を削除
+  - リポジトリ名抽出ユーティリティ（`utils/repository_name_extractor.py`）を削除
+  - 関連するテストファイルを整理
+
 ## [1.1.6] - 2025-12-21
 
 ### Added
