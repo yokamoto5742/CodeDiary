@@ -42,7 +42,7 @@ venv\Scripts\activate
 ### 3. 依存関係のインストール
 
 ```bash
-pip install -r requirements.txt
+uv sync
 ```
 
 ### 4. 環境変数の設定
@@ -97,7 +97,7 @@ enable_cross_repo_tracking = true  # 複数リポジトリの横断取得を有�
 
 ```ini
 [Path]
-daily_path = C:\Users\your_name\path\to\プログラミング学習日誌\01_Daily  # 日誌の保存先
+daily_path = C:\Users\your_name\path\to\プログラミング学習日誌  # 日誌の保存先
 
 [Obsidian]
 obsidian_path = C:\Program Files\Obsidian\Obsidian.exe  # 保存後に起動する実行ファイル
@@ -113,10 +113,10 @@ calendar_select_background = gray80  # カレンダー選択背景色
 calendar_select_foreground = black   # カレンダー選択テキスト色
 
 [WindowSettings]
-window_width = 800
+window_width = 300
 window_height = 200
-window_x = 648    # ウィンドウX位置（自動保存）
-window_y = 64     # ウィンドウY位置（自動保存）
+window_x = 0    # ウィンドウX位置（自動保存）
+window_y = 0    # ウィンドウY位置（自動保存）
 ```
 
 ## アーキテクチャ
@@ -139,7 +139,10 @@ Tkinterを使用したUIコンポーネント：
 - **ProgrammingDiaryGenerator**: Gitコミット履歴とAI統合による日誌生成（プロンプト基づく構造化生成）
 - **GitCommitHistoryService**: Gitコマンド実行とコミット履歴抽出（日付フィルタリング対応）
 - **GitHubCommitTracker**: GitHub APIを使用した複数リポジトリの横断取得
-- **DiaryFileService** (`service/diary_file_service.py`): 保存先パス組み立て、Markdownファイル保存、Obsidian起動
+  - ThreadPoolExecutorによる**並列コミット取得**（最大8スレッド同時実行）
+  - 日付フィルタリング（前回push日から効率化）
+  - 日付範囲対応メソッド
+- **DiaryFileService** (`service/diary_file_service.py`): Markdownファイル保存、Obsidian起動
 
 #### AI統合層（`external_service/`）
 
@@ -165,9 +168,22 @@ content, input_tokens, output_tokens = client.generate_content(
 
 生成AIへ送信するプロンプトは、`utils/prompt_template.md`で定義されており、以下の構成で日誌を生成します：
 
-- **日付別整理**: 作業日ごとにセクション分け、リポジトリ名明記
-- **カテゴリ分類**: 機能追加、バグ修正、UI改善、リファクタリング、テスト、ドキュメント、設定構成など
-- **出力形式**: 日付、リポジトリ名、カテゴリ、概要、変更ファイル、詳細を階層化
+#### 日誌構成
+
+- **作業内容**: コミット履歴の圧縮要約（1日あたり400字以内）
+  - リポジトリ別に整理、日付順に並べる
+  - カテゴリ分類: 機能追加、バグ修正、UI改善、リファクタリング、テスト、ドキュメント、設定構成
+  - 変更ファイル最大5件、詳細は最大3項目まで
+
+- **学びと気づき**: コミット履歴から読み取れる学習ポイント（AIが下書き）
+  - 事実・原因・次のアクションの3点セットで記述
+  - 同一機能への繰り返し修正、revert、環境構築での課題などを優先抽出
+
+- **知見集**: 日誌ではなく知見集（CLAUDE.md等）に転記すべき情報
+  - ビルド設定、CI設定、環境構築などの再利用可能な手順
+  - 繰り返し登場する問題パターン
+
+- **自由記載**: ユーザーが追加記入する欄
 
 ## 開発者向け情報
 
@@ -176,9 +192,6 @@ content, input_tokens, output_tokens = client.generate_content(
 ```bash
 # 仮想環境の有効化
 venv\Scripts\activate
-
-# テストフレームワークのインストール（requirements.txtに含まれている）
-pip install pytest pytest-cov
 
 # テスト実行（全テスト）
 pytest

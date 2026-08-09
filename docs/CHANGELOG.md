@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-08-09
+### Changed
+- **GitHubコミットトラッカーに並列処理と日付フィルタリング機能を追加**: `service/github_commit_tracker.py` を拡張
+  - コミット取得の並列処理対応でパフォーマンスを向上
+  - 日付フィルタリング機能の改善により精度を向上
+  - テスト 50 件を追加して動作確認を強化
+
+## [2.0.0] - 2026-08-09
 ### Added
 - **日誌のMarkdownファイル出力**: `service/diary_file_service.py` を新規追加
   - 対象期間の終了日から `YYYY-MM-DD_プログラミング学習日誌.md` を生成
@@ -13,7 +21,6 @@
 ### Changed
 - **日誌本文をMarkdown形式のまま保持**: Obsidianで見出し・箇条書きが機能するよう、
   `_convert_markdown_to_plain_text()` によるプレーンテキスト変換を廃止
-- **生成結果の `GitHub Account:` 前置を削除**: `prompt_template.md` の出力指示と整合
 - **UIを対象期間・GitHubで作成・閉じるボタンのみに簡素化**（モデル名とトークン数の表示は継続）
 - **生成中は「GitHubで作成」ボタンも無効化**し、二重実行を防止
 
@@ -21,9 +28,8 @@
 - **Googleフォーム連携の削除**: `service/launch_form_page.py` と `tests/test_launch_form_page.py` を削除
 - **日誌内容表示ウィジェットの削除**: `widgets/diary_content_widget.py` を削除
   - コピーボタン、クリアボタン、Ctrl+Lキーバインド、クリップボード自動コピーも併せて削除
-- **不要になった設定の削除**: `config.ini` から `[DiaryText]` セクションを削除
 
-## [1.2.0] - 2026-06-30
+## [1.2.0]
 
 ### Added
 - **GitHubコミットトラッカー統合**: GitHub API経由でコミット履歴を直接取得し、ローカルGit依存を排除

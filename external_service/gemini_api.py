@@ -28,22 +28,20 @@ class GeminiAPIClient:
             if self.client is None:
                 raise APIError(MESSAGES["GEMINI_API_CREDENTIALS_MISSING"])
 
-            response = self.client.models.generate_content(
+            interaction = self.client.interactions.create(
                 model=model_name,
-                contents=prompt,
+                input=prompt,
             )
 
-            if hasattr(response, 'text'):
-                summary_text = response.text
-            else:
-                summary_text = str(response)
+            summary_text = getattr(interaction, 'output_text', None) or str(interaction)
 
             input_tokens = 0
             output_tokens = 0
 
-            if hasattr(response, 'usage_metadata'):
-                input_tokens = response.usage_metadata.prompt_token_count or 0
-                output_tokens = response.usage_metadata.candidates_token_count or 0
+            usage = getattr(interaction, 'usage', None)
+            if usage is not None:
+                input_tokens = getattr(usage, 'input_tokens', 0) or 0
+                output_tokens = getattr(usage, 'output_tokens', 0) or 0
 
             return summary_text, input_tokens, output_tokens
 
