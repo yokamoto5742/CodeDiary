@@ -32,20 +32,13 @@ git clone https://github.com/yokamoto5742/CodeDiary
 cd CodeDiary
 ```
 
-### 2. 仮想環境の構築
-
-```bash
-python -m venv venv
-venv\Scripts\activate
-```
-
-### 3. 依存関係のインストール
+### 2. 依存関係のインストール
 
 ```bash
 uv sync
 ```
 
-### 4. 環境変数の設定
+### 3. 環境変数の設定
 
 プロジェクトルートに`.env`ファイルを作成：
 
@@ -59,7 +52,7 @@ GITHUB_TOKEN=your_github_token
 GITHUB_USERNAME=your_github_username
 ```
 
-### 5. 初期設定
+### 4. 初期設定
 
 アプリケーション起動時に`utils/config.ini`が自動作成されます。
 
@@ -69,7 +62,7 @@ GITHUB_USERNAME=your_github_username
 
 ```bash
 # アプリケーション起動
-python main.py
+uv run python main.py
 ```
 
 UIから以下の操作を実行：
@@ -187,23 +180,20 @@ content, input_tokens, output_tokens = client.generate_content(
 
 ## 開発者向け情報
 
-### 開発環境セットアップ
+### テスト実行
 
 ```bash
-# 仮想環境の有効化
-venv\Scripts\activate
-
 # テスト実行（全テスト）
-pytest
+uv run pytest
 
 # カバレッジ付きテスト
-pytest --cov=service --cov=external_service --cov=utils --cov=app
+uv run pytest --cov=service --cov=external_service --cov=utils --cov=app
 
 # 特定テストの実行
-pytest tests/test_programming_diary_generator.py -v
+uv run pytest tests/test_programming_diary_generator.py -v
 
 # テスト実行（詳細出力）
-pytest -v
+uv run pytest -v
 ```
 
 ### ビルド
@@ -211,7 +201,7 @@ pytest -v
 実行ファイル化（PyInstallerを使用）：
 
 ```bash
-python build.py
+uv run python build.py
 ```
 
 生成された実行ファイルは`dist/`フォルダに出力されます。

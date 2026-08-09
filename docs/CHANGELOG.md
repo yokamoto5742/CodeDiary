@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [2.0.2] - 2026-08-09
+### Changed
+- **Gemini API の更新**: `interactions.create`を使用するよう変更し、使用状況メタデータの処理を改善
+  - `external_service/gemini_api.py`: API メソッドを `generate_content` から `interactions.create` に変更
+  - トークン数の処理を `usage_metadata` から `usage` に対応
+  - 出力テキスト抽出処理を最適化
+- **依存関係の更新**: pyproject.toml と uv.lock の依存パッケージを最新バージョンに更新
+
 ## [2.0.1] - 2026-08-09
 ### Changed
 - **GitHubコミットトラッカーに並列処理と日付フィルタリング機能を追加**: `service/github_commit_tracker.py` を拡張
