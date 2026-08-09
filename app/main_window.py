@@ -5,13 +5,13 @@ from tkinter import messagebox
 from tkinter import ttk
 
 from app import __version__
-from service.launch_form_page import launch_form_page
+from service.diary_file_service import build_diary_path, launch_obsidian, save_diary
 from service.programming_diary_generator import ProgrammingDiaryGenerator
 from utils.config_manager import load_config, save_config
+from utils.constants import MESSAGES
 from widgets import (
     ControlButtonsWidget,
     DateSelectionWidget,
-    DiaryContentWidget,
     ProgressWidget
 )
 
@@ -29,7 +29,6 @@ class CodeDiaryMainWindow:
 
         self._setup_locale()
         self._setup_ui()
-        self._setup_bindings()
 
     def _setup_locale(self):
         """日本語ロケールを初期化"""
@@ -65,7 +64,6 @@ class CodeDiaryMainWindow:
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
         main_frame.columnconfigure(0, weight=1)
-        main_frame.rowconfigure(2, weight=1)
 
         self.date_selection_widget = DateSelectionWidget(
             main_frame,
@@ -80,29 +78,15 @@ class CodeDiaryMainWindow:
             row=1, column=0, sticky="we", pady=(0, 5)
         )
 
-        self.diary_content_widget = DiaryContentWidget(
-            main_frame,
-            self.config
-        )
-        self.diary_content_widget.grid(
-            row=2, column=0, sticky="wens", pady=(0, 10)
-        )
-
         self.control_buttons_widget = ControlButtonsWidget(main_frame)
         self.control_buttons_widget.grid(
-            row=3, column=0, sticky="we"
+            row=2, column=0, sticky="we"
         )
 
         self.control_buttons_widget.set_callbacks(
             create_github_diary=self._create_github_diary,
-            copy_text=self._copy_all_text,
-            clear_text=self._clear_text,
             close=self.root.quit
         )
-
-    def _setup_bindings(self):
-        """キーバインドを設定"""
-        self.root.bind('<Control-l>', lambda e: self._clear_text())
 
     def _validate_dates(self, since_date, until_date):
         """日付範囲の妥当性を検証"""
@@ -164,53 +148,43 @@ class CodeDiaryMainWindow:
                 since_date=since_date,
                 until_date=until_date
             )
-            self.root.after(0, self._display_diary_result, diary_content, input_tokens, output_tokens, model_name)
+            self.root.after(0, self._save_diary_result, diary_content, input_tokens, output_tokens,
+                            model_name, until_date)
         except Exception as e:
             self.root.after(0, self._schedule_error_display, str(e))
 
-    def _display_diary_result(self, diary_content, input_tokens, output_tokens, model_name):
-        """生成した日誌を画面に表示しクリップボードにコピー その後Chromeでフォームを開く"""
+    def _save_diary_result(self, diary_content, input_tokens, output_tokens, model_name, until_date):
+        """生成した日誌をMarkdownファイルに保存しObsidianを起動"""
         try:
-            self.diary_content_widget.set_content(diary_content)
+            file_path = build_diary_path(until_date)
 
-            self.root.clipboard_clear()
-            self.root.clipboard_append(diary_content)
+            if file_path.exists() and not messagebox.askyesno(
+                    MESSAGES["OVERWRITE_TITLE"],
+                    MESSAGES["OVERWRITE_CONFIRM"].format(file_path.name)):
+                self.progress_widget.clear_message()
+                self._set_buttons_state(True)
+                return
+
+            save_diary(file_path, diary_content)
 
             self.progress_widget.set_completion_message(input_tokens, output_tokens, model_name)
 
             self._set_buttons_state(True)
 
-            launch_form_page()
+            launch_obsidian()
 
         except Exception as e:
-            self._display_error(f"結果表示エラー: {str(e)}")
+            self._display_error(MESSAGES["DIARY_SAVE_ERROR"].format(str(e)))
 
     def _schedule_error_display(self, error_message: str):
-        """メインスレッドでエラーメッセージを表示するようスケジュール"""
-        self.root.after(0, lambda: self.progress_widget.set_error_message(error_message))
+        """メインスレッドでエラーメッセージを表示しボタンを復帰させる"""
+        self.progress_widget.set_error_message(error_message)
+        self._set_buttons_state(True)
 
     def _display_error(self, error_message):
         """エラーダイアログを表示しUIを回復状態に戻す"""
         messagebox.showerror("エラー", error_message)
         self._set_buttons_state(True)
-        self.progress_widget.clear_message()
-
-    def _copy_all_text(self):
-        """日誌内容をクリップボードにコピー"""
-        try:
-            if self.diary_content_widget.has_content():
-                content = self.diary_content_widget.get_content()
-                self.root.clipboard_clear()
-                self.root.clipboard_append(content)
-                messagebox.showinfo("コピー完了", "日誌内容をクリップボードにコピーしました")
-            else:
-                messagebox.showwarning("警告", "コピーするテキストがありません")
-        except Exception as e:
-            messagebox.showerror("エラー", f"コピー中にエラーが発生しました: {str(e)}")
-
-    def _clear_text(self):
-        """日誌内容をリセットし、UI状態を初期化"""
-        self.diary_content_widget.clear_content()
         self.progress_widget.clear_message()
 
     def _set_buttons_state(self, enabled):

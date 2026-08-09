@@ -6,6 +6,8 @@ Gitコミット履歴を生成AIで解析し、構造化されたプログラミ
 
 - **Gitコミット履歴の自動解析**: 指定期間内のコミット履歴を自動抽出
 - **GitHub連携**: 複数リポジトリの横断コミット履歴取得
+- **Markdownファイル出力**: 対象期間の終了日でファイル名を付けて日誌保存フォルダに保存
+- **Obsidian連携**: 日誌ファイル作成後にObsidianを自動起動
 - **ウィンドウ位置・サイズ保存**: UI状態の自動復元
 
 ## 前提条件と要件
@@ -15,7 +17,7 @@ Gitコミット履歴を生成AIで解析し、構造化されたプログラミ
 - **OS**: Windows 11以降
 - **Python**: 3.13以降
 - **Git**: インストール済み（コミット履歴取得に必須）
-- **Google Chrome**: Googleフォーム起動時に使用
+- **Obsidian**: 日誌ファイル作成後の起動に使用
 
 ### 必要なAPIキー
 
@@ -73,10 +75,11 @@ python main.py
 UIから以下の操作を実行：
 
 2. **期間指定**: カレンダーで開始日・終了日を選択
-3. **日誌生成**: GitHub連携日記作成で全リポジトリから生成
+3. **日誌生成**: 「GitHubで作成」で全リポジトリから生成
 4. **結果の利用**:
-   - 自動的にクリップボードにコピー
-   - 日誌用Google Formを開く
+   - `YYYY-MM-DD_プログラミング学習日誌.md`（YYYY-MM-DDは対象期間の終了日）として保存フォルダに出力
+   - 同名ファイルが存在する場合は上書き確認ダイアログを表示
+   - 保存後にObsidianを自動起動
 
 ### 設定ファイル（config.ini）
 
@@ -90,20 +93,19 @@ repository_path = C:/Users/your_name/path/to/repository
 enable_cross_repo_tracking = true  # 複数リポジトリの横断取得を有効化
 ```
 
-#### Google Form設定
+#### 保存先・Obsidian設定
 
 ```ini
-[URL]
-form_url = https://forms.gle/your_form_id
+[Path]
+daily_path = C:\Users\your_name\path\to\プログラミング学習日誌\01_Daily  # 日誌の保存先
+
+[Obsidian]
+obsidian_path = C:\Program Files\Obsidian\Obsidian.exe  # 保存後に起動する実行ファイル
 ```
 
 #### UI設定
 
 ```ini
-[DiaryText]
-font = メイリオ
-font_size = 11
-
 [UI]
 calendar_background = darkblue      # カレンダー背景色
 calendar_foreground = white          # カレンダーテキスト色
@@ -112,12 +114,9 @@ calendar_select_foreground = black   # カレンダー選択テキスト色
 
 [WindowSettings]
 window_width = 800
-window_height = 600
+window_height = 200
 window_x = 648    # ウィンドウX位置（自動保存）
 window_y = 64     # ウィンドウY位置（自動保存）
-
-[Chrome]
-chrome_path = C:\Program Files\Google\Chrome\Application\chrome.exe
 ```
 
 ## アーキテクチャ
@@ -132,16 +131,15 @@ Tkinterを使用したUIコンポーネント：
 
 - **CodeDiaryMainWindow** (`app/main_window.py`): アプリケーション全体のレイアウト管理とイベント処理
 - **DateSelectionWidget**: カレンダーベースの日付範囲選択
-- **DiaryContentWidget**: 生成された日誌の表示とクリップボード操作
-- **ControlButtonsWidget**: 日誌生成・Google Form送信ボタン
-- **ProgressWidget**: タスク進捗表示
+- **ControlButtonsWidget**: 日誌生成・閉じるボタン
+- **ProgressWidget**: タスク進捗とトークン数・モデル名の表示
 
 #### ビジネスロジック層（`service/`）
 
 - **ProgrammingDiaryGenerator**: Gitコミット履歴とAI統合による日誌生成（プロンプト基づく構造化生成）
 - **GitCommitHistoryService**: Gitコマンド実行とコミット履歴抽出（日付フィルタリング対応）
 - **GitHubCommitTracker**: GitHub APIを使用した複数リポジトリの横断取得
-- **GoogleFormLauncher**: Google Form立ち上げ
+- **DiaryFileService** (`service/diary_file_service.py`): 保存先パス組み立て、Markdownファイル保存、Obsidian起動
 
 #### AI統合層（`external_service/`）
 
@@ -224,25 +222,23 @@ python build.py
    GEMINI_API_KEY=your_key
    ```
 
-### Google Formが起動しない
+### Obsidianが起動しない
 
-**原因**: Chromeがインストールされていない、またはパスが不正
-
-**解決策**:
-1. Google Chromeをインストール
-2. `config.ini`の`[Chrome]`セクションで`chrome_path`を確認
-   - Windows標準インストール: `C:\Program Files\Google\Chrome\Application\chrome.exe`
-3. Chromeのパスが正しいか確認：`dir "C:\Program Files\Google\Chrome\Application\"`
-
-### 日本語が文字化けする
-
-**原因**: フォント設定またはロケール設定の問題
+**原因**: Obsidianがインストールされていない、またはパスが不正
 
 **解決策**:
-1. `config.ini`の`[DiaryText]`セクションでフォント設定を確認
-   - 推奨: `font = メイリオ`（Windows標準日本語フォント）
-2. 代替フォント：`MS ゴシック`、`Yu Gothic`
-3. Pythonファイルエンコーディング確認（通常UTF-8で自動処理）
+1. Obsidianをインストール
+2. `config.ini`の`[Obsidian]`セクションで`obsidian_path`を確認
+   - Windows標準インストール: `C:\Program Files\Obsidian\Obsidian.exe`
+3. パスが正しいか確認：`dir "C:\Program Files\Obsidian\"`
+
+### 日誌ファイルが保存されない
+
+**原因**: `daily_path`が不正、または保存先への書き込み権限がない
+
+**解決策**:
+1. `config.ini`の`[Path]`セクションで`daily_path`を確認
+2. 保存先フォルダは存在しない場合に自動作成されるため、親フォルダの書き込み権限を確認
 
 ## ライセンス
 

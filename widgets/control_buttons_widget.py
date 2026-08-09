@@ -10,8 +10,6 @@ class ControlButtonsWidget(ttk.Frame):
         super().__init__(parent, **kwargs)
 
         self.create_github_diary_callback: Optional[Callable] = None
-        self.copy_text_callback: Optional[Callable] = None
-        self.clear_text_callback: Optional[Callable] = None
         self.close_callback: Optional[Callable] = None
 
         self._setup_ui()
@@ -25,39 +23,19 @@ class ControlButtonsWidget(ttk.Frame):
         )
         self.github_button.grid(row=0, column=0, padx=(0, 5))
 
-        self.copy_button = ttk.Button(
-            self,
-            text="コピー",
-            command=self._on_copy_text
-        )
-        self.copy_button.grid(row=0, column=1, padx=(0, 5))
-
-        self.clear_button = ttk.Button(
-            self,
-            text="クリア",
-            command=self._on_clear_text
-        )
-        self.clear_button.grid(row=0, column=2, padx=(0, 5))
-
         self.close_button = ttk.Button(
             self,
             text="閉じる",
             command=self._on_close
         )
-        self.close_button.grid(row=0, column=3)
+        self.close_button.grid(row=0, column=1)
 
     def set_callbacks(self,
                      create_github_diary: Optional[Callable] = None,
-                     copy_text: Optional[Callable] = None,
-                     clear_text: Optional[Callable] = None,
                      close: Optional[Callable] = None):
         """各ボタンのコールバック関数を設定"""
         if create_github_diary:
             self.create_github_diary_callback = create_github_diary
-        if copy_text:
-            self.copy_text_callback = copy_text
-        if clear_text:
-            self.clear_text_callback = clear_text
         if close:
             self.close_callback = close
 
@@ -66,28 +44,13 @@ class ControlButtonsWidget(ttk.Frame):
         if self.create_github_diary_callback:
             self.create_github_diary_callback()
 
-    def _on_copy_text(self):
-        """コピーボタンのクリック処理"""
-        if self.copy_text_callback:
-            self.copy_text_callback()
-
-    def _on_clear_text(self):
-        """クリアボタンのクリック処理"""
-        if self.clear_text_callback:
-            self.clear_text_callback()
-
     def _on_close(self):
         """閉じるボタンのクリック処理"""
         if self.close_callback:
             self.close_callback()
 
     def set_buttons_state(self, enabled: bool):
-        """日誌作成以外のボタンの有効/無効を切り替え"""
+        """操作ボタンの有効/無効を切り替え"""
         state = tk.NORMAL if enabled else tk.DISABLED
-        self.clear_button.config(state=state)
+        self.github_button.config(state=state)
         self.close_button.config(state=state)
-
-    def set_copy_button_state(self, enabled: bool):
-        """コピーボタンの有効/無効を切り替え"""
-        state = tk.NORMAL if enabled else tk.DISABLED
-        self.copy_button.config(state=state)

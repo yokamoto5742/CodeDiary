@@ -1,4 +1,3 @@
-import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -65,32 +64,6 @@ class ProgrammingDiaryGenerator:
 
         return "\n".join(formatted_commits)
 
-    def _convert_markdown_to_plain_text(self, markdown_text: str) -> str:
-        """生成AIが生成したMarkdown形式の日誌をプレーンテキストに変換"""
-        patterns = [
-            (r'^#{1,6}\s*', ''),
-            (r'^\s*[-*+]\s*', ''),
-            (r'^\s*\d+\.\s*', ''),
-            (r'\*\*([^*]+)\*\*', r'\1'),
-            (r'\*([^*]+)\*', r'\1'),
-            (r'__([^_]+)__', r'\1'),
-            (r'_([^_]+)_', r'\1'),
-            (r'```[^`]*```', ''),
-            (r'`([^`]+)`', r'\1'),
-            (r'^[-–—]{3,}$', '---'),
-            (r'\n{3,}', '\n\n'),
-        ]
-
-        plain_text = markdown_text
-
-        for pattern, replacement in patterns:
-            flags = re.MULTILINE if pattern.startswith('^') else 0
-            if pattern == r'```[^`]*```':
-                flags = re.DOTALL
-            plain_text = re.sub(pattern, replacement, plain_text, flags=flags)
-
-        return plain_text.strip()
-
     def generate_diary(self,
                        since_date: Optional[str] = None,
                        until_date: Optional[str] = None,
@@ -137,12 +110,7 @@ class ProgrammingDiaryGenerator:
                 model_name=self.default_model
             )
 
-            plain_diary = self._convert_markdown_to_plain_text(diary_content)
-
-            project_name = f"GitHub Account: {github_tracker.username}"
-            project_diary = f"{project_name}\n{plain_diary}"
-
-            return project_diary, input_tokens, output_tokens, self.default_model
+            return diary_content, input_tokens, output_tokens, self.default_model
 
         except Exception as e:
             raise Exception(f"プログラミング日記の生成に失敗しました: {e}")

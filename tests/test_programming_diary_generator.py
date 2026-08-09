@@ -141,46 +141,6 @@ class TestProgrammingDiaryGenerator:
         assert "invalid-timestamp" in result
         assert "テストコミット" in result
 
-    def test_convert_markdown_to_plain_text(self, generator):
-        """Markdownからプレーンテキストへの変換テスト"""
-        markdown_text = """
-# タイトル
-## サブタイトル
-
-**太字テキスト** と *斜体テキスト*
-
-- 箇条書き1
-- 箇条書き2
-
-1. 番号付きリスト1
-2. 番号付きリスト2
-
-```python
-print("コードブロック")
-```
-
-`インラインコード`
-
----
-
-連続する改行
-
-
-テスト
-        """
-
-        result = generator._convert_markdown_to_plain_text(markdown_text)
-
-        # マークダウン記号が除去されていることを確認
-        assert "# " not in result
-        assert "**" not in result
-        assert "- " not in result.split('\n')[0]  # 最初の行に箇条書き記号がないことを確認
-        assert "```" not in result
-        assert "`" not in result
-        assert "太字テキスト" in result
-        assert "斜体テキスト" in result
-        assert "インラインコード" in result
-
     def test_generate_diary_success(self, generator, mock_github_tracker, mock_ai_client):
         """日誌生成の正常系テスト"""
         mock_template = "テスト用プロンプトテンプレート"
@@ -193,8 +153,8 @@ print("コードブロック")
                 until_date="2024-01-02"
             )
 
-        # 検証
-        assert "GitHub Account: testuser" in result
+        # 検証: AI出力がMarkdownのまま返ること
+        assert result == "# テスト日誌\n\n**機能追加**\n- 初期コミット実装"
         assert input_tokens == 100
         assert output_tokens == 200
         assert model_name == 'test-model'
