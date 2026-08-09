@@ -1,6 +1,7 @@
 import os
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Any, Tuple, Optional
+from typing import Callable, Dict, List, Any, Tuple, Optional
 
 import requests
 
@@ -9,6 +10,9 @@ from service.git_commit_history import BaseCommitService
 
 class GitHubCommitTracker(BaseCommitService):
     """GitHubユーザーの複数リポジトリのコミット履歴をAPI経由で取得"""
+
+    MAX_WORKERS = 8
+
     def __init__(self, token: Optional[str] = None, username: Optional[str] = None):
         super().__init__()
         self.token = token or os.getenv('GITHUB_TOKEN')
@@ -74,6 +78,21 @@ class GitHubCommitTracker(BaseCommitService):
 
         return repos
 
+    @staticmethod
+    def _filter_repos_by_push_date(repos: List[Dict[str, Any]], since: str) -> List[Dict[str, Any]]:
+        """since以降にpushされていないリポジトリを除外し、無駄なAPI呼び出しを省く"""
+        return [repo for repo in repos if repo.get('pushed_at') is None or repo['pushed_at'] >= since]
+
+    def _collect_commits(self, repos: List[Dict[str, Any]],
+                         fetch_commits: Callable[[str], List[Dict[str, Any]]]) -> Dict[str, List[Dict[str, Any]]]:
+        """リポジトリごとのコミット取得を並列実行し、結果をまとめる"""
+        repo_names = [repo['name'] for repo in repos]
+
+        with ThreadPoolExecutor(max_workers=self.MAX_WORKERS) as executor:
+            results = list(executor.map(fetch_commits, repo_names))
+
+        return {name: commits for name, commits in zip(repo_names, results) if commits}
+
     def get_commits_for_repo_by_date(self, repo_name: str, target_date: str) -> List[Dict[str, Any]]:
         """指定リポジトリから特定日付のコミット一覧を取得"""
         try:
@@ -105,22 +124,12 @@ class GitHubCommitTracker(BaseCommitService):
 
     def get_all_commits_by_date(self, target_date: str) -> Dict[str, List[Dict[str, Any]]]:
         """全リポジトリから特定日付のコミットを取得。リポジトリ名をキーとした辞書で返す"""
-        repos = self.get_user_repositories()
-        all_commits = {}
+        since, _ = self._convert_date_to_utc_range(target_date)
+        repos = self._filter_repos_by_push_date(self.get_user_repositories(), since)
 
         print(f"チェック対象リポジトリ数: {len(repos)}")
 
-        for repo in repos:
-            repo_name = repo['name']
-            print(f"チェック中: {repo_name}")
-
-            commits = self.get_commits_for_repo_by_date(repo_name, target_date)
-
-            if commits:
-                all_commits[repo_name] = commits
-                print(f"  → {len(commits)} 件のコミットが見つかりました")
-
-        return all_commits
+        return self._collect_commits(repos, lambda name: self.get_commits_for_repo_by_date(name, target_date))
 
     def get_today_commits(self) -> Dict[str, List[Dict[str, Any]]]:
         """本日のコミット一覧を取得"""
@@ -216,23 +225,16 @@ class GitHubCommitTracker(BaseCommitService):
 
     def get_all_commits_by_date_range(self, since_date: str, until_date: str) -> Dict[str, List[Dict[str, Any]]]:
         """全リポジトリから日付範囲内のコミットを取得"""
-        repos = self.get_user_repositories()
-        all_commits = {}
+        since, _ = self._convert_date_to_utc_range(since_date, until_date)
+        repos = self._filter_repos_by_push_date(self.get_user_repositories(), since)
 
         print(f"チェック対象リポジトリ数: {len(repos)}")
         print(f"期間: {since_date} から {until_date}")
 
-        for repo in repos:
-            repo_name = repo['name']
-            print(f"チェック中: {repo_name}")
-
-            commits = self.get_commits_for_repo_by_date_range(repo_name, since_date, until_date)
-
-            if commits:
-                all_commits[repo_name] = commits
-                print(f"  → {len(commits)} 件のコミットが見つかりました")
-
-        return all_commits
+        return self._collect_commits(
+            repos,
+            lambda name: self.get_commits_for_repo_by_date_range(name, since_date, until_date)
+        )
 
     def get_commits_for_diary_generation_range(self, since_date: str, until_date: Optional[str] = None) -> List[Dict[str, Any]]:
         """日付範囲のコミットを日誌生成用フォーマットで取得"""

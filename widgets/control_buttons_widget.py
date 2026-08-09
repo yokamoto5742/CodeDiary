@@ -15,20 +15,20 @@ class ControlButtonsWidget(ttk.Frame):
         self._setup_ui()
 
     def _setup_ui(self):
-        """操作ボタンを行に並べて配置"""
+        """操作ボタンを縦に並べて配置"""
         self.github_button = ttk.Button(
             self,
             text="GitHubで作成",
             command=self._on_create_github_diary
         )
-        self.github_button.grid(row=0, column=0, padx=(0, 5))
+        self.github_button.grid(row=0, column=0, sticky=tk.W, pady=(0, 5))
 
         self.close_button = ttk.Button(
             self,
             text="閉じる",
             command=self._on_close
         )
-        self.close_button.grid(row=0, column=1)
+        self.close_button.grid(row=0, column=1, sticky=tk.W, padx=(5, 0))
 
     def set_callbacks(self,
                      create_github_diary: Optional[Callable] = None,

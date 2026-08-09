@@ -39,25 +39,22 @@ class DateSelectionWidget(ttk.LabelFrame):
         self._setup_ui()
 
     def _setup_ui(self):
-        """開始日と終了日のラベルと入力フィールドを配置"""
-        self.columnconfigure(1, weight=1)
-        self.columnconfigure(3, weight=1)
-
+        """開始日と終了日のラベルと入力フィールドを縦に配置"""
         ttk.Label(self, text="開始日").grid(
             row=0, column=0, sticky=tk.W, padx=(0, 5)
         )
 
         self.start_date_entry = self._create_date_entry()
         self.start_date_entry.grid(
-            row=0, column=1, sticky=(tk.W, tk.E), padx=(0, 10)
+            row=0, column=1, sticky=tk.W, pady=(0, 5)
         )
 
         ttk.Label(self, text="終了日").grid(
-            row=0, column=2, sticky=tk.W, padx=(0, 5)
+            row=1, column=0, sticky=tk.W, padx=(0, 5)
         )
 
         self.end_date_entry = self._create_date_entry()
-        self.end_date_entry.grid(row=0, column=3, sticky=(tk.W, tk.E))
+        self.end_date_entry.grid(row=1, column=1, sticky=tk.W)
 
     def _create_date_entry(self):
         """DateEntryウィジェットを作成"""

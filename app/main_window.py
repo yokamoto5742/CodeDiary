@@ -43,8 +43,8 @@ class CodeDiaryMainWindow:
 
     def _setup_ui(self):
         """ウィンドウレイアウトと各ウィジェットを初期化"""
-        window_width = self.config.get('WindowSettings', 'window_width', fallback='600')
-        window_height = self.config.get('WindowSettings', 'window_height', fallback='600')
+        window_width = self.config.get('WindowSettings', 'window_width', fallback='400')
+        window_height = self.config.get('WindowSettings', 'window_height', fallback='330')
         window_x = self.config.get('WindowSettings', 'window_x', fallback='')
         window_y = self.config.get('WindowSettings', 'window_y', fallback='')
 

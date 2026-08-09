@@ -11,6 +11,8 @@ class ProgressWidget(ttk.Label):
         self.progress_var = tk.StringVar()
         self.progress_var.set("")
 
+        kwargs.setdefault('justify', tk.LEFT)
+        kwargs.setdefault('anchor', tk.W)
         super().__init__(parent, textvariable=self.progress_var, **kwargs)
 
         self.start_time: Optional[float] = None
@@ -58,14 +60,15 @@ class ProgressWidget(ttk.Label):
         else:
             elapsed_str = "不明"
 
-        total_tokens = input_tokens + output_tokens
-        model_info = f", モデル={model_name}" if model_name else ""
+        lines = [
+            "日誌生成完了",
+            f"処理時間: {elapsed_str}",
+            f"文字数: 入力={input_tokens} 出力={output_tokens}",
+        ]
+        if model_name:
+            lines.append(f"モデル={model_name}")
 
-        message = (
-            f"日誌生成完了 処理時間: {elapsed_str}, 文字数: 入力={input_tokens}, "
-            f"出力={output_tokens}, 合計={total_tokens}{model_info}"
-        )
-        self.set_message(message)
+        self.set_message("\n".join(lines))
 
     def set_error_message(self, error_message: str):
         """エラーメッセージを表示"""

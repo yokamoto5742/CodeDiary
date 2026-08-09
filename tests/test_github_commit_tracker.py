@@ -248,6 +248,41 @@ class TestGitHubCommitTracker:
 
                 assert all_commits == {}
 
+    def test_filter_repos_by_push_date_skips_stale_repos(self, tracker):
+        """since以前にしかpushのないリポジトリが除外されることのテスト"""
+        repos = [
+            {'name': 'active', 'pushed_at': '2024-01-15T10:00:00Z'},
+            {'name': 'stale', 'pushed_at': '2023-12-01T10:00:00Z'},
+            {'name': 'unknown'},  # pushed_atがない場合は除外しない
+        ]
+
+        filtered = tracker._filter_repos_by_push_date(repos, '2024-01-14T15:00:00Z')
+
+        assert [repo['name'] for repo in filtered] == ['active', 'unknown']
+
+    def test_get_all_commits_by_date_skips_stale_repos(self, tracker, sample_commit_data):
+        """pushed_atで除外されたリポジトリにはAPI呼び出しが発生しないことのテスト"""
+        repos = [
+            {'name': 'active', 'pushed_at': '2024-01-15T10:00:00Z'},
+            {'name': 'stale', 'pushed_at': '2023-12-01T10:00:00Z'},
+        ]
+
+        with patch.object(tracker, 'get_user_repositories', return_value=repos):
+            with patch.object(tracker, 'get_commits_for_repo_by_date',
+                              return_value=sample_commit_data) as mock_fetch:
+                all_commits = tracker.get_all_commits_by_date('2024-01-15')
+
+                assert list(all_commits.keys()) == ['active']
+                mock_fetch.assert_called_once_with('active', '2024-01-15')
+
+    def test_collect_commits_preserves_repo_order(self, tracker):
+        """並列取得でもリポジトリ順が保たれることのテスト"""
+        repos = [{'name': f'repo-{i}'} for i in range(5)]
+
+        result = tracker._collect_commits(repos, lambda name: [{'sha': name}])
+
+        assert list(result.keys()) == ['repo-0', 'repo-1', 'repo-2', 'repo-3', 'repo-4']
+
     @patch('service.github_commit_tracker.datetime')
     def test_get_today_commits(self, mock_datetime, tracker):
         """今日のコミット取得テスト"""
@@ -351,6 +386,21 @@ class TestGitHubCommitTracker:
 
                 assert 'test-repo-1' in all_commits
                 assert 'test-repo-2' in all_commits
+
+    def test_get_all_commits_by_date_range_skips_stale_repos(self, tracker, sample_commit_data):
+        """日付範囲指定でもpushed_atによる除外が効くことのテスト"""
+        repos = [
+            {'name': 'active', 'pushed_at': '2024-01-16T10:00:00Z'},
+            {'name': 'stale', 'pushed_at': '2023-12-01T10:00:00Z'},
+        ]
+
+        with patch.object(tracker, 'get_user_repositories', return_value=repos):
+            with patch.object(tracker, 'get_commits_for_repo_by_date_range',
+                              return_value=sample_commit_data) as mock_fetch:
+                all_commits = tracker.get_all_commits_by_date_range('2024-01-15', '2024-01-16')
+
+                assert list(all_commits.keys()) == ['active']
+                mock_fetch.assert_called_once_with('active', '2024-01-15', '2024-01-16')
 
     def test_get_commits_for_diary_generation_range_single_date(self, tracker):
         """日誌生成用コミット取得（単一日付）テスト"""
