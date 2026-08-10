@@ -1,9 +1,8 @@
 import configparser
 import os
 import sys
-from pathlib import Path
 
-from dotenv import load_dotenv
+from utils.env_loader import load_environment_variables
 
 
 def get_config_path():
@@ -19,18 +18,6 @@ def get_config_path():
 CONFIG_PATH = get_config_path()
 
 _cached_config = None
-
-
-def load_environment_variables():
-    """プロジェクトルートの.envファイルから環境変数を読み込む"""
-    current_dir = Path(__file__).parent.parent
-    env_path = current_dir / '.env'
-
-    if env_path.exists():
-        load_dotenv(env_path)
-        return True
-    return False
-
 
 load_environment_variables()
 

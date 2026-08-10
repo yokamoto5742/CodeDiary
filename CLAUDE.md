@@ -20,7 +20,7 @@ uv run python build.py           # PyInstallerで実行ファイル化（dist/�
 
 ## 注意点（ハマりどころ）
 
-- **`.env` ローダーが2箇所に重複している**: `utils/env_loader.py` と `utils/config_manager.py` がそれぞれ独立して `.env` を読み込む（`config_manager.py` はインポート時に副作用として実行）。環境変数の読み込みロジックを変更する際は両方を確認する。
+- **`.env` の読み込みは `utils/env_loader.py` の `load_environment_variables()` に一元化されている**: `utils/config_manager.py` はこれをインポートし、インポート時に副作用として呼び出している。
 - **`utils/config.ini` はgit管理下にある**: アプリ初回起動時に自動生成される設定ファイルだが、リポジトリにはこの開発機のローカルパス（OneDriveパス等）が入った状態でコミットされている。テンプレートファイルとして扱わない。個人環境向けの変更を誤ってコミットしない。
 - **AIプロバイダーはGeminiのみ**: 過去にClaude/OpenAIやPlaywrightによるGoogleフォーム自動化をサポートしていた名残（`docs/CHANGELOG.md` の古いエントリや `__pycache__` 内の古い `.pyc` ファイル名）が残っているが、該当するソースコードは既に削除済み。存在すると思い込まない。
 - **Windows専用**: Obsidianの実行パス（`C:\Program Files\Obsidian\Obsidian.exe`）などがハードコードされており、動作前提はWindows 11以降。
