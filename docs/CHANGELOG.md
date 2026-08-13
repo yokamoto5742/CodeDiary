@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [2.0.3] - 2026-08-13
+### Changed
+- **トークン数の取得方法を改善**: `external_service/gemini_api.py` のGemini API呼び出しを最適化
+  - `usage.total_input_tokens`, `usage.total_output_tokens` を直接参照してトークン数を取得
+  - より正確で安定したトークン数計算を実現
+- **不要なコードを削除**: `utils/config_manager.py` を簡潔化
+  - 日誌機能周辺の冗長なコードを整理
+
 ## [2.0.2] - 2026-08-09
 ### Changed
 - **Gemini API の更新**: `interactions.create`を使用するよう変更し、使用状況メタデータの処理を改善
