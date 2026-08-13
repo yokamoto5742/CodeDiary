@@ -63,7 +63,7 @@ class ProgressWidget(ttk.Label):
         lines = [
             "日誌生成完了",
             f"処理時間: {elapsed_str}",
-            f"文字数: 入力={input_tokens} 出力={output_tokens}",
+            f"トークン数: 入力={input_tokens} 出力={output_tokens}",
         ]
         if model_name:
             lines.append(f"モデル={model_name}")

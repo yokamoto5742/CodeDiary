@@ -40,8 +40,8 @@ class GeminiAPIClient:
 
             usage = getattr(interaction, 'usage', None)
             if usage is not None:
-                input_tokens = getattr(usage, 'input_tokens', 0) or 0
-                output_tokens = getattr(usage, 'output_tokens', 0) or 0
+                input_tokens = getattr(usage, 'total_input_tokens', 0) or 0
+                output_tokens = getattr(usage, 'total_output_tokens', 0) or 0
 
             return summary_text, input_tokens, output_tokens
 
