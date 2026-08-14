@@ -31,7 +31,7 @@ def _split_sections(content: str) -> List[Tuple[str, str]]:
 
 
 def _merge_content(existing_content: str, new_content: str) -> str:
-    """既存の内容に新しい内容を見出しごとに追記する"""
+    """既存の内容に新しい内容を見出しごとに追記する。新しい内容は見出しの直後（既存本文の前）へ挿入する"""
     merged = [[heading, body] for heading, body in _split_sections(existing_content)]
     indexes = {heading: index for index, (heading, _) in enumerate(merged)}
 
@@ -40,7 +40,7 @@ def _merge_content(existing_content: str, new_content: str) -> str:
             continue
         if heading in indexes:
             section = merged[indexes[heading]]
-            section[1] = f"{section[1]}\n\n{body}".strip()
+            section[1] = f"{body}\n\n{section[1]}".strip()
         else:
             indexes[heading] = len(merged)
             merged.append([heading, body])

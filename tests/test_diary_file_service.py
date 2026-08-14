@@ -56,14 +56,14 @@ class TestSaveDiary:
         assert file_path.exists()
 
     def test_appends_to_existing_section(self, tmp_path):
-        """既存ファイルの同じ見出しには本文が追記される"""
+        """既存ファイルの同じ見出しには見出しと既存本文の間に新しい本文が挿入される"""
         file_path = tmp_path / '2026-08-09_プログラミング学習日誌.md'
         file_path.write_text('## 作業内容\n\n旧内容\n\n## 知見集\n\n- 旧知見\n', encoding='utf-8')
 
         save_diary(file_path, '## 作業内容\n\n新内容\n\n## 知見集\n\n- 新知見\n')
 
         assert file_path.read_text(encoding='utf-8') == (
-            '## 作業内容\n\n旧内容\n\n新内容\n\n## 知見集\n\n- 旧知見\n\n- 新知見\n'
+            '## 作業内容\n\n新内容\n\n旧内容\n\n## 知見集\n\n- 新知見\n\n- 旧知見\n'
         )
 
     def test_keeps_section_order_and_appends_new_section(self, tmp_path):
@@ -74,7 +74,7 @@ class TestSaveDiary:
         save_diary(file_path, '## 学びと気づき\n\n事実：テスト\n\n## 作業内容\n\n新内容\n')
 
         assert file_path.read_text(encoding='utf-8') == (
-            '## 作業内容\n\n旧内容\n\n新内容\n\n## 学びと気づき\n\n事実：テスト\n'
+            '## 作業内容\n\n新内容\n\n旧内容\n\n## 学びと気づき\n\n事実：テスト\n'
         )
 
     def test_skips_empty_new_section(self, tmp_path):
@@ -85,7 +85,7 @@ class TestSaveDiary:
         save_diary(file_path, '## 作業内容\n\n新内容\n\n## 自由記載\n\n')
 
         assert file_path.read_text(encoding='utf-8') == (
-            '## 作業内容\n\n旧内容\n\n新内容\n\n## 自由記載\n\n手書きメモ\n'
+            '## 作業内容\n\n新内容\n\n旧内容\n\n## 自由記載\n\n手書きメモ\n'
         )
 
 
