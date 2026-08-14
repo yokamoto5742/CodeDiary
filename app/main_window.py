@@ -159,8 +159,8 @@ class CodeDiaryMainWindow:
             file_path = build_diary_path(until_date)
 
             if file_path.exists() and not messagebox.askyesno(
-                    MESSAGES["OVERWRITE_TITLE"],
-                    MESSAGES["OVERWRITE_CONFIRM"].format(file_path.name)):
+                    MESSAGES["APPEND_TITLE"],
+                    MESSAGES["APPEND_CONFIRM"].format(file_path.name)):
                 self.progress_widget.clear_message()
                 self._set_buttons_state(True)
                 return
