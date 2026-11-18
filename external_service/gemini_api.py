@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 
 from google import genai
 
-from utils.config_manager import GEMINI_API_KEY, GEMINI_MODEL
+from utils.config_manager import GEMINI_API_KEY, GEMINI_MODEL, GEMINI_THINKING_LEVEL
 from utils.constants import MESSAGES
 from utils.exceptions import APIError
 
@@ -11,6 +11,7 @@ class GeminiAPIClient:
     def __init__(self):
         self.api_key: Optional[str] = GEMINI_API_KEY
         self.default_model: Optional[str] = GEMINI_MODEL
+        self.thinking_level: Optional[str] = GEMINI_THINKING_LEVEL
         self.client: Optional[genai.Client] = None
 
     def initialize(self) -> bool:
@@ -28,9 +29,13 @@ class GeminiAPIClient:
             if self.client is None:
                 raise APIError(MESSAGES["GEMINI_API_CREDENTIALS_MISSING"])
 
+            # 未設定時はモデルのデフォルトのシンキングレベルを使う
+            generation_config = {"thinking_level": self.thinking_level} if self.thinking_level else None
+
             interaction = self.client.interactions.create(
                 model=model_name,
                 input=prompt,
+                generation_config=generation_config,
             )
 
             summary_text = getattr(interaction, 'output_text', None) or str(interaction)

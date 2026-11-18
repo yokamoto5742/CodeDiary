@@ -46,6 +46,7 @@ uv sync
 # Gemini API
 GEMINI_API_KEY=your_api_key_here
 GEMINI_MODEL=gemini-3.0-flash
+GEMINI_THINKING_LEVEL=low  # 任意（low / medium / high / xhigh）。未設定時はモデルのデフォルト
 
 # GitHub連携
 GITHUB_TOKEN=your_github_token

@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [2.0.4] - 2026-11-18
+### Added
+- **Geminiのシンキングレベル設定**: `.env` の `GEMINI_THINKING_LEVEL`（例: `low`）で `interactions.create` の `generation_config.thinking_level` を指定可能に
+  - 未設定時は従来どおりモデルのデフォルトを使用
+
 ## [2.0.3] - 2026-08-13
 ### Changed
 - **トークン数の取得方法を改善**: `external_service/gemini_api.py` のGemini API呼び出しを最適化
