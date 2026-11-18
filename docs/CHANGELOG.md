@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [2.0.5] - 2026-11-18
+### Removed
+- **未使用の環境変数 `GEMINI_THINKING_BUDGET` を削除**: `utils/config_manager.py` と `tests/conftest.py` から削除（`GEMINI_THINKING_LEVEL` に置き換え済み）
+
+### Changed
+- **`.gitignore` に `__pycache__/` と `*.pyc` を追加**: 誤ってステージされていたバイトコードのステージを解除
+
 ## [2.0.4] - 2026-11-18
 ### Added
 - **Geminiのシンキングレベル設定**: `.env` の `GEMINI_THINKING_LEVEL`（例: `low`）で `interactions.create` の `generation_config.thinking_level` を指定可能に

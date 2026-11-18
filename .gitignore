@@ -12,3 +12,5 @@ logs/
 .coverage
 misc.xml
 error_log.txt
+__pycache__/
+*.pyc

@@ -21,7 +21,6 @@ def setup_test_environment():
     test_env_vars = {
         'GEMINI_API_KEY': 'test_gemini_key',
         'GEMINI_MODEL': 'gemini-1.5-flash',
-        'GEMINI_THINKING_BUDGET': '1024'
     }
     
     # 既存の環境変数をバックアップ
