@@ -1,17 +1,7 @@
 import os
-import sys
-from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
-
-
-# テスト実行時のパス設定
-def pytest_configure(config):
-    """PyTest設定時に実行される関数"""
-    # プロジェクトルートをPythonパスに追加
-    project_root = Path(__file__).parent
-    sys.path.insert(0, str(project_root))
 
 
 @pytest.fixture(scope="session", autouse=True)

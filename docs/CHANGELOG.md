@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [2.0.6] - 2026-11-18
+### Fixed
+- **`tests/conftest.py` の `pytest_configure` 二重定義を解消**: 後の定義に上書きされて実行されていなかったパス設定用の定義を削除（Pyright の reportRedeclaration エラーを解消）
+
 ## [2.0.5] - 2026-11-18
 ### Removed
 - **未使用の環境変数 `GEMINI_THINKING_BUDGET` を削除**: `utils/config_manager.py` と `tests/conftest.py` から削除（`GEMINI_THINKING_LEVEL` に置き換え済み）
